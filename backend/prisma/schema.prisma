@@ -1,0 +1,243 @@
+// Prisma schema for the medical clinic appointment learning project
+// ("MediBook" — a small clinic chain: doctors, patients, front-desk staff).
+//
+// Everything here is fully modeled. The intentionally missing piece is not a
+// table but an ALGORITHM: turning a doctor's recurring Availability into
+// concrete Slot rows (Gap 4 — src/services/slotGeneration.service.ts).
+//
+// NOTE ON INDEXES (Gap 3 — done): Postgres does NOT automatically index
+// foreign-key columns, so the original schema (only @id/@unique) made doctor
+// search and availability queries sequential-scan. The @@index lines below
+// target the actual query shapes; see src/services/availability.service.ts
+// for the query-side half of the fix (SQL aggregation instead of JS).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+// Three roles, three very different permission sets:
+//   PATIENT — books own appointments
+//   DOCTOR  — sees appointments on their own schedule
+//   STAFF   — front desk: manages schedules, books on behalf of patients,
+//             confirms/checks-in appointments
+enum Role {
+  PATIENT
+  DOCTOR
+  STAFF
+}
+
+enum Specialty {
+  GENERAL_PRACTICE
+  PEDIATRICS
+  DERMATOLOGY
+  CARDIOLOGY
+  ORTHOPEDICS
+}
+
+// The appointment lifecycle, modeled on how clinics actually run:
+//   REQUESTED  -> some visit types need staff review before they're real
+//   CONFIRMED  -> on the schedule
+//   CHECKED_IN -> patient arrived at the front desk
+//   COMPLETED / CANCELLED / NO_SHOW -> terminal outcomes
+// The TRANSITIONS between these states are not implemented — that's Gap 1
+// (src/domain/appointmentStateMachine.ts).
+enum AppointmentStatus {
+  REQUESTED
+  CONFIRMED
+  CHECKED_IN
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum SlotStatus {
+  OPEN
+  BOOKED
+  BLOCKED // held out of sale, e.g. by doctor time off (see Gap 6)
+}
+
+// ---------------------------------------------------------------------------
+// People & places
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         Role     @default(PATIENT)
+  phone        String?
+  createdAt    DateTime @default(now())
+
+  // Set when this user IS a doctor (doctors can log in too).
+  doctorProfile Doctor?
+
+  appointments       Appointment[] @relation("PatientAppointments")
+  bookedAppointments Appointment[] @relation("BookedByUser")
+}
+
+// A physical branch of the clinic chain.
+model Clinic {
+  id      String @id @default(cuid())
+  code    String @unique // e.g. "DTN"
+  name    String
+  address String
+  city    String
+  phone   String
+
+  doctors        DoctorClinic[]
+  availabilities Availability[]
+  slots          Slot[]
+}
+
+model Doctor {
+  id        String    @id @default(cuid())
+  // Optional link to a login account. Seeded doctors mostly have none —
+  // in real clinics plenty of doctors never touch the portal.
+  userId    String?   @unique
+  user      User?     @relation(fields: [userId], references: [id])
+  name      String // display name incl. title, e.g. "Dr. Amara Diallo"
+  specialty Specialty
+  bio       String?
+
+  clinics        DoctorClinic[]
+  availabilities Availability[]
+  timeOff        TimeOff[]
+  slots          Slot[]
+
+  // Gap 3: the public doctor search filters on this enum column.
+  @@index([specialty])
+}
+
+// A doctor can practice at multiple branches (and a branch hosts many
+// doctors) — classic many-to-many via an explicit join table.
+model DoctorClinic {
+  doctorId String
+  clinicId String
+  doctor   Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  clinic   Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@id([doctorId, clinicId])
+  // Gap 3: the composite PK only serves doctorId-first lookups; filtering
+  // doctors BY clinic walks the clinicId side and needs its own index.
+  @@index([clinicId])
+}
+
+// ---------------------------------------------------------------------------
+// Scheduling
+// ---------------------------------------------------------------------------
+
+// What the clinic offers. `requiresApproval` models the real-world split
+// between instant-book visits (a follow-up) and visits the front desk
+// reviews first (an annual physical needs chart prep).
+model Service {
+  id               String      @id @default(cuid())
+  name             String      @unique // e.g. "General Consultation"
+  durationMinutes  Int
+  price            Decimal     @db.Decimal(10, 2)
+  requiresApproval Boolean     @default(false)
+  // Which doctor specialties may perform this service.
+  specialties      Specialty[]
+
+  appointments Appointment[]
+}
+
+// A doctor's RECURRING weekly working pattern at one clinic —
+// "Dr. Diallo: Monday 09:00–17:00 at Downtown". This is the *rule*;
+// Slot rows below are the rule *expanded into concrete bookable times*.
+// The expansion algorithm is Gap 4 (src/services/slotGeneration.service.ts).
+model Availability {
+  id        String @id @default(cuid())
+  doctorId  String
+  clinicId  String
+  doctor    Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  clinic    Clinic @relation(fields: [clinicId], references: [id])
+  dayOfWeek Int // 0 = Sunday ... 6 = Saturday
+  startTime String // "09:00" — clinic-local wall time
+  endTime   String // "17:00"
+
+  @@unique([doctorId, clinicId, dayOfWeek, startTime])
+}
+
+// A block of time a doctor is away (vacation, conference, sick day).
+// Slot generation (Gap 4) must skip these; creating one that collides with
+// existing appointments must cascade (Gap 6).
+model TimeOff {
+  id       String   @id @default(cuid())
+  doctorId String
+  doctor   Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  startAt  DateTime
+  endAt    DateTime
+  reason   String?
+
+  // Gap 3/4: slot generation and the time-off cascade look up a doctor's
+  // time off by date range.
+  @@index([doctorId, startAt])
+}
+
+// A concrete bookable time: "Dr. Diallo, Downtown, 2026-07-22 10:00–10:30".
+// Exactly ONE appointment can hold a slot — which is precisely what the
+// Gap 5 race condition violates.
+model Slot {
+  id       String     @id @default(cuid())
+  doctorId String
+  clinicId String
+  doctor   Doctor     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  clinic   Clinic     @relation(fields: [clinicId], references: [id])
+  startAt  DateTime // stored in UTC
+  endAt    DateTime
+  status   SlotStatus @default(OPEN)
+
+  // NOTE: there is deliberately NO database constraint tying "one slot, one
+  // active appointment" — the naive booking code relies on the status flag
+  // alone, and the Gap 5 race slips right past it. (When you fix Gap 5,
+  // ask yourself: could a partial unique index on Appointment(slotId)
+  // WHERE status NOT IN ('CANCELLED','NO_SHOW') make double-booking
+  // impossible at the database level, whatever the app code does?)
+  appointments Appointment[]
+
+  @@unique([doctorId, startAt]) // a doctor can't be in two rooms at once
+  // Gap 3: both availability queries filter by (doctorId, status, startAt
+  // range) — this index matches that shape exactly, equality columns first.
+  @@index([doctorId, status, startAt])
+}
+
+// ---------------------------------------------------------------------------
+// Appointments
+// ---------------------------------------------------------------------------
+
+model Appointment {
+  id        String            @id @default(cuid())
+  reference String            @unique // 6-char confirmation code, e.g. "K7KJKC"
+  status    AppointmentStatus @default(REQUESTED)
+
+  patientId String
+  patient   User    @relation("PatientAppointments", fields: [patientId], references: [id])
+  slotId    String
+  slot      Slot    @relation(fields: [slotId], references: [id])
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id])
+
+  // Who created the booking — the patient themself, or a staff member
+  // booking on their behalf at the front desk.
+  bookedById String
+  bookedBy   User   @relation("BookedByUser", fields: [bookedById], references: [id])
+
+  notes     String? // patient's note to the clinic ("recurring headaches")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Gap 3: "my appointments" filters by patient; the time-off cascade and
+  // slot lookups filter by slot.
+  @@index([patientId, createdAt])
+  @@index([slotId])
+}

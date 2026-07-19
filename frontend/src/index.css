@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+/* Class-based dark mode: `dark:` utilities apply under `<html class="dark">`. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-teal-500) 25%, transparent);
+}
+
+/* Native selects draw their arrow flush against the edge (especially on
+   Windows), so replace it with our own chevron and give it breathing room. */
+.select-arrow {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+}
+.dark .select-arrow {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* Subtle entrance for list items and panels. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.25s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+}
+
+/* Toasts drop in from above and float back up when leaving. */
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.drop {
+  animation: drop 0.25s ease both;
+}
+.toast {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.toast[data-leaving="true"] {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .drop {
+    animation: none;
+  }
+  .toast {
+    transition: opacity 0.2s ease;
+  }
+}
+
+/* react-day-picker: mark dates that have at least one open slot. */
+.day-available:not([data-selected]) {
+  position: relative;
+  font-weight: 600;
+  color: var(--color-teal-700);
+}
+.dark .day-available:not([data-selected]) {
+  color: var(--color-teal-400);
+}
+.day-available:not([data-selected])::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--color-teal-500);
+}
+
+/* Match the picker's accent to the app's teal, in both themes. */
+.rdp-root {
+  --rdp-accent-color: var(--color-teal-600);
+  --rdp-accent-background-color: var(--color-teal-50);
+}
+.dark .rdp-root {
+  --rdp-accent-color: var(--color-teal-400);
+  --rdp-accent-background-color: color-mix(in srgb, var(--color-teal-400) 14%, transparent);
+}
+.dark .rdp-root [data-selected="true"] .rdp-day_button {
+  color: var(--color-slate-950);
+  background: var(--color-teal-400);
+}
+.rdp-day_button {
+  transition: background-color 0.15s ease, color 0.15s ease;
+}

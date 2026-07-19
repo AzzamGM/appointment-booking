@@ -1,0 +1,28 @@
+# Local PostgreSQL for development and tests.
+#
+# Two databases are created:
+#   - medibook       (development — used by `npm run dev`, migrations, seed)
+#   - medibook_test  (integration tests — wiped between test runs, see docker/init)
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: medibook-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: medibook
+      POSTGRES_PASSWORD: medibook
+      POSTGRES_DB: medibook
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # Scripts in this folder run once, on first container startup only.
+      # (If you change them later: `docker compose down -v` to re-run.)
+      - ./docker/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medibook -d medibook"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db-data:
