@@ -83,6 +83,8 @@ model User {
 
   appointments       Appointment[] @relation("PatientAppointments")
   bookedAppointments Appointment[] @relation("BookedByUser")
+  prescriptions      Prescription[] @relation("PrescribedBy")
+  auditLogs          AuditLog[]
 }
 
 // A physical branch of the clinic chain.
@@ -236,8 +238,44 @@ model Appointment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  prescriptions Prescription[]
+
   // Gap 3: "my appointments" filters by patient; the time-off cascade and
   // slot lookups filter by slot.
   @@index([patientId, createdAt])
   @@index([slotId])
+}
+
+// Medication prescribed during a visit. Written by the doctor (or entered by
+// front-desk staff on the doctor's behalf), visible to the patient on their
+// appointment card.
+model Prescription {
+  id            String      @id @default(cuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  medication   String // e.g. "Amoxicillin"
+  dosage       String // e.g. "500 mg"
+  frequency    String // e.g. "twice daily for 7 days"
+  instructions String? // e.g. "take with food"
+
+  prescribedById String
+  prescribedBy   User   @relation("PrescribedBy", fields: [prescribedById], references: [id])
+  createdAt      DateTime @default(now())
+
+  @@index([appointmentId])
+}
+
+// Append-only trail of user actions (logins, bookings, status changes,
+// prescriptions). Staff can review recent activity across the clinic.
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String // dotted event name, e.g. "appointment.create"
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
 }

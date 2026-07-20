@@ -3,7 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { ApiError } from '../lib/api';
 import { useToast } from '../lib/toast';
+import { img, saveAvatarChoice, type AvatarChoice } from '../lib/images';
+import Pic from '../components/Pic';
 import { btnPrimary, card, input, label } from '../lib/ui';
+
+const AVATARS: Array<{ value: AvatarChoice; src: string }> = [
+  { value: 'female', src: img.femaleUser },
+  { value: 'male', src: img.maleUser },
+];
 
 export default function SignupPage() {
   const { signup } = useAuth();
@@ -13,6 +20,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [avatar, setAvatar] = useState<AvatarChoice | null>(null);
   const [busy, setBusy] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
@@ -20,6 +28,7 @@ export default function SignupPage() {
     setBusy(true);
     try {
       await signup(email, password, fullName);
+      if (avatar) saveAvatarChoice(email, avatar);
       toast.success('Account created. Welcome to MediBook.');
       navigate('/');
     } catch (err) {
@@ -72,13 +81,40 @@ export default function SignupPage() {
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute inset-y-0 right-2 my-auto h-6 rounded px-1.5 text-xs font-medium text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              title={showPassword ? 'Hide password' : 'Show password'}
+              className="absolute inset-y-0 right-2 my-auto flex h-9 w-9 items-center justify-center rounded transition-opacity hover:opacity-70"
             >
-              {showPassword ? 'Hide' : 'Show'}
+              <Pic src={showPassword ? img.hide : img.unhide} className="h-6 w-6" />
             </button>
           </div>
         </label>
-        <button type="submit" disabled={busy} className={`w-full ${btnPrimary}`}>
+        <div>
+          <span className={label}>Pick an avatar (optional)</span>
+          <div className="flex gap-2">
+            {AVATARS.map((a) => (
+              <button
+                key={a.value}
+                type="button"
+                onClick={() => setAvatar((v) => (v === a.value ? null : a.value))}
+                aria-pressed={avatar === a.value}
+                className={`rounded-xl border p-2 transition-all active:scale-95 ${
+                  avatar === a.value
+                    ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-500/25 dark:border-teal-500 dark:bg-teal-500/10'
+                    : 'border-slate-200 bg-slate-50 hover:border-teal-300 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-teal-700'
+                }`}
+              >
+                <Pic src={a.src} className="h-12 w-12" />
+              </button>
+            ))}
+          </div>
+        </div>
+        <button
+          type="submit"
+          disabled={busy}
+          className={`flex w-full items-center justify-center gap-2 ${btnPrimary}`}
+        >
+          {busy && <Pic src={img.hourglass} className="hourglass h-5 w-5" />}
           {busy ? 'Creating account...' : 'Sign up'}
         </button>
         <p className="text-center text-sm text-slate-500 dark:text-slate-400">

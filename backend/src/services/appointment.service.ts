@@ -14,6 +14,7 @@ import {
   NotFoundError,
 } from '../middleware/errors';
 import { verifyEligibilityMock } from './insurance.service';
+import { recordAudit } from './audit.service';
 import { generateBookingReference } from '../utils/bookingReference';
 
 export interface CreateAppointmentInput {
@@ -34,6 +35,7 @@ const appointmentWithDetails = Prisma.validator<Prisma.AppointmentDefaultArgs>()
     slot: { include: { doctor: true, clinic: true } },
     service: true,
     patient: true,
+    prescriptions: { include: { prescribedBy: true }, orderBy: { createdAt: 'asc' } },
   },
 });
 type AppointmentWithDetails = Prisma.AppointmentGetPayload<typeof appointmentWithDetails>;
@@ -56,6 +58,15 @@ export function toAppointmentDto(appt: AppointmentWithDetails) {
     },
     patient: { id: appt.patientId, fullName: appt.patient.fullName },
     notes: appt.notes,
+    prescriptions: appt.prescriptions.map((p) => ({
+      id: p.id,
+      medication: p.medication,
+      dosage: p.dosage,
+      frequency: p.frequency,
+      instructions: p.instructions,
+      prescribedBy: p.prescribedBy.fullName,
+      createdAt: p.createdAt.toISOString(),
+    })),
     createdAt: appt.createdAt.toISOString(),
   };
 }
@@ -171,6 +182,12 @@ export async function createAppointment(requester: Requester, input: CreateAppoi
     });
   });
 
+  void recordAudit(
+    requester.id,
+    'appointment.create',
+    `${appointment.reference}${patientId !== requester.id ? ' (on behalf of patient)' : ''}`,
+  );
+
   return getAppointmentById(appointment.id, requester);
 }
 
@@ -258,6 +275,12 @@ export async function changeStatus(
       await tx.slot.update({ where: { id: appt.slotId }, data: { status: SlotStatus.OPEN } });
     }
   });
+
+  void recordAudit(
+    requester.id,
+    'appointment.status',
+    `${appt.reference}: ${appt.status} -> ${newStatus}`,
+  );
 
   return getAppointmentById(appointmentId, requester);
 }

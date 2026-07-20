@@ -4,7 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import { authRouter } from './routes/auth.routes';
 import { doctorsRouter } from './routes/doctors.routes';
-import { appointmentsRouter, patientsRouter } from './routes/appointments.routes';
+import { appointmentsRouter, auditRouter, patientsRouter } from './routes/appointments.routes';
 import { clinicsRouter, servicesRouter } from './routes/meta.routes';
 import { errorHandler, notFoundHandler } from './middleware/errors';
 
@@ -25,6 +25,7 @@ export function createApp() {
   app.use('/api/doctors', doctorsRouter);
   app.use('/api/appointments', appointmentsRouter);
   app.use('/api/patients', patientsRouter);
+  app.use('/api/audit', auditRouter);
   app.use('/api/clinics', clinicsRouter);
   app.use('/api/services', servicesRouter);
 

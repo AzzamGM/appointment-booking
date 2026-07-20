@@ -1,27 +1,46 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api, ApiError } from '../lib/api';
 import { SPECIALTIES, specialtyLabel } from '../lib/labels';
-import { btnGhost, btnPrimary, card, errorText, input, label, mutedText, pageTitle, select } from '../lib/ui';
+import { doctorAvatar, img, specialtyIcon } from '../lib/images';
+import Pic from '../components/Pic';
+import Loading from '../components/Loading';
+import Select from '../components/Select';
+import { btnGhost, btnPrimary, card, errorText, input, label, mutedText, pageTitle } from '../lib/ui';
 import type { Clinic, Doctor, Specialty } from '../types';
 
-function initials(name: string): string {
-  return name
-    .replace(/^Dr\.?\s+/i, '')
-    .split(/\s+/)
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
+const HEALTH_TIPS: Array<{ icon: string; text: string }> = [
+  { icon: img.virus, text: 'Flu season is coming — screenings are available at every clinic.' },
+  { icon: img.lungs, text: 'Breathe easy: lung function checks take under 15 minutes.' },
+  { icon: img.physicalCheck, text: 'A blood pressure check is free with any visit.' },
+  { icon: img.medicine, text: 'Bring your current medication list to your appointment.' },
+];
+
+/** A small rotating banner of clinic tips — one fades in every few seconds. */
+function HealthTips() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setI((v) => (v + 1) % HEALTH_TIPS.length), 6000);
+    return () => clearInterval(t);
+  }, []);
+  const tip = HEALTH_TIPS[i];
+  return (
+    <div className="mt-4 flex items-center gap-3 rounded-xl border border-teal-200/60 bg-teal-50/60 px-4 py-2.5 dark:border-teal-800/40 dark:bg-teal-500/5">
+      <Pic key={i} src={tip.icon} className="rise h-7 w-7" />
+      <p key={`t${i}`} className="rise text-sm text-teal-900 dark:text-teal-200">
+        {tip.text}
+      </p>
+    </div>
+  );
 }
 
 function DoctorSkeleton() {
   return (
     <div className={`${card} flex items-center gap-4 p-4`}>
-      <div className="h-12 w-12 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+      <div className="h-16 w-16 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
       <div className="flex-1 space-y-2">
-        <div className="h-4 w-48 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+        <div className="h-5 w-58 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
         <div className="h-3 w-72 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
       </div>
       <div className="h-9 w-36 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800" />
@@ -63,51 +82,61 @@ export default function DoctorsPage() {
   return (
     <div>
       <h1 className={pageTitle}>Find a doctor</h1>
-      <p className={`mb-5 mt-1 ${mutedText}`}>
+      <p className={`mt-1 ${mutedText}`}>
         Browse the clinic network and book a visit in a couple of clicks.
       </p>
 
-      <div className={`${card} grid grid-cols-1 gap-3 p-4 sm:grid-cols-3 sm:p-5`}>
-        <label className="block">
-          <span className={label}>Specialty</span>
-          <select
-            className={select}
-            value={specialty}
-            onChange={(e) => setSpecialty(e.target.value as Specialty | '')}
-          >
-            <option value="">All specialties</option>
-            {SPECIALTIES.map((s) => (
-              <option key={s} value={s}>
-                {specialtyLabel(s)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          <span className={label}>Clinic</span>
-          <select className={select} value={clinic} onChange={(e) => setClinic(e.target.value)}>
-            <option value="">All clinics</option>
-            {clinics.data?.clinics.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.name} ({c.city})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block">
-          <span className={label}>Name</span>
-          <input
-            className={input}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by name..."
-          />
-        </label>
+      <HealthTips />
+
+      {/* relative z-20 lifts this card's stacking context above the doctor
+          cards below, so the open dropdown isn't painted under them. */}
+      <div className={`${card} relative z-20 mt-4 p-4 sm:p-5`}>
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+          <Pic src={img.filter} className="h-6 w-6" />
+          Filter doctors
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div>
+            <span className={label}>Specialty</span>
+            <Select
+              value={specialty}
+              onChange={(v) => setSpecialty(v as Specialty | '')}
+              options={[
+                { value: '', label: 'All specialties' },
+                ...SPECIALTIES.map((s) => ({ value: s, label: specialtyLabel(s) })),
+              ]}
+            />
+          </div>
+          <div>
+            <span className={label}>Clinic</span>
+            <Select
+              value={clinic}
+              onChange={setClinic}
+              options={[
+                { value: '', label: 'All clinics' },
+                ...(clinics.data?.clinics ?? []).map((c) => ({
+                  value: c.code,
+                  label: `${c.name} (${c.city})`,
+                })),
+              ]}
+            />
+          </div>
+          <label className="block">
+            <span className={label}>Name</span>
+            <input
+              className={input}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search by name..."
+            />
+          </label>
+        </div>
       </div>
 
       <div className="mt-6 space-y-3">
         {doctors.isLoading && (
           <>
+            <Loading text="Finding doctors..." />
             <DoctorSkeleton />
             <DoctorSkeleton />
             <DoctorSkeleton />
@@ -130,6 +159,7 @@ export default function DoctorsPage() {
 
         {doctors.data?.doctors.length === 0 && (
           <div className={`${card} flex flex-col items-center gap-3 p-8 text-center`}>
+            <Pic src={img.questionMark} className="h-12 w-12 opacity-80" />
             <p className={mutedText}>No doctors match those filters.</p>
             {hasFilters && (
               <button onClick={clearFilters} className={btnGhost}>
@@ -145,20 +175,25 @@ export default function DoctorsPage() {
             className={`${card} rise group flex flex-wrap items-center gap-4 p-4 hover:border-teal-300 hover:shadow-md sm:p-5 dark:hover:border-teal-700`}
             style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
           >
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-50 text-sm font-bold text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
-              {initials(d.name)}
-            </span>
+            <Pic
+              src={doctorAvatar(d.name)}
+              alt=""
+              fit="cover"
+              className="h-16 w-16 shrink-0 rounded-full bg-teal-50 transition-transform group-hover:scale-105 dark:bg-teal-500/10"
+            />
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="text-lg font-semibold">{d.name}</span>
-                <span className="rounded-md bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
+                <span className="flex items-center gap-1.5 rounded-md bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
+                  <Pic src={specialtyIcon[d.specialty]} className="h-4.5 w-4.5" />
                   {specialtyLabel(d.specialty)}
                 </span>
               </div>
               {d.bio && <p className={`mt-0.5 ${mutedText}`}>{d.bio}</p>}
-              <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-slate-400 dark:text-slate-500">
+              <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-400 dark:text-slate-500">
                 {d.clinics.map((c) => (
-                  <span key={c.code}>
+                  <span key={c.code} className="flex items-center gap-1">
+                    <Pic src={img.locationPin} className="h-4 w-4" />
                     {c.name}, {c.city}
                   </span>
                 ))}

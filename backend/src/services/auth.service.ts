@@ -4,6 +4,7 @@ import type { User } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { signToken } from '../middleware/auth';
 import { ConflictError, UnauthorizedError } from '../middleware/errors';
+import { recordAudit } from './audit.service';
 
 // Cost factor 10 ≈ tens of milliseconds per hash — slow enough to make
 // brute-forcing stolen hashes expensive, fast enough for interactive login.
@@ -40,6 +41,8 @@ export async function signup(input: { email: string; password: string; fullName:
     data: { email, passwordHash, fullName: input.fullName.trim(), role: 'PATIENT' },
   });
 
+  void recordAudit(user.id, 'auth.signup', user.email);
+
   return { token: signToken({ sub: user.id, role: user.role }), user: toPublicUser(user) };
 }
 
@@ -52,6 +55,8 @@ export async function login(input: { email: string; password: string }) {
   if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) {
     throw new UnauthorizedError('Invalid email or password');
   }
+
+  void recordAudit(user.id, 'auth.login', user.email);
 
   return { token: signToken({ sub: user.id, role: user.role }), user: toPublicUser(user) };
 }

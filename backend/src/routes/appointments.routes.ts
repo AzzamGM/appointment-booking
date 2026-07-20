@@ -4,7 +4,10 @@ import { z } from 'zod';
 import { AppointmentStatus, type Role } from '@prisma/client';
 import { authenticate, requireRole } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errors';
+import { prisma } from '../lib/prisma';
 import * as appointmentService from '../services/appointment.service';
+import * as prescriptionService from '../services/prescription.service';
+import * as auditService from '../services/audit.service';
 
 const createAppointmentSchema = z.object({
   slotId: z.string().min(1),
@@ -88,13 +91,70 @@ appointmentsRouter.patch(
   }),
 );
 
+// POST /api/appointments/:id/prescriptions — doctor (own schedule) or staff
+const createPrescriptionSchema = z.object({
+  medication: z.string().min(1).max(120),
+  dosage: z.string().min(1).max(60),
+  frequency: z.string().min(1).max(120),
+  instructions: z.string().max(500).optional(),
+});
+
+appointmentsRouter.post(
+  '/:id/prescriptions',
+  requireRole('DOCTOR', 'STAFF'),
+  asyncHandler(async (req, res) => {
+    const input = createPrescriptionSchema.parse(req.body);
+    const prescription = await prescriptionService.createPrescription(
+      requester(req),
+      req.params.id,
+      input,
+    );
+    res.status(201).json(prescription);
+  }),
+);
+
 // Mounted at /api/patients — provides GET /api/patients/me/appointments
 export const patientsRouter = Router();
 patientsRouter.use(authenticate);
+
+// GET /api/patients — staff only: pick a patient for front-desk booking.
+patientsRouter.get(
+  '/',
+  requireRole('STAFF'),
+  asyncHandler(async (_req, res) => {
+    const patients = await prisma.user.findMany({
+      where: { role: 'PATIENT' },
+      orderBy: { fullName: 'asc' },
+      select: { id: true, fullName: true, email: true },
+    });
+    res.json({ patients });
+  }),
+);
 
 patientsRouter.get(
   '/me/appointments',
   asyncHandler(async (req, res) => {
     res.json({ appointments: await appointmentService.listPatientAppointments(req.user!.sub) });
+  }),
+);
+
+// GET /api/patients/me/activity — a user's own audit trail.
+patientsRouter.get(
+  '/me/activity',
+  asyncHandler(async (req, res) => {
+    res.json({ entries: await auditService.listUserAudit(req.user!.sub) });
+  }),
+);
+
+// Mounted at /api/audit — staff-only view of recent activity clinic-wide.
+export const auditRouter = Router();
+auditRouter.use(authenticate);
+
+auditRouter.get(
+  '/',
+  requireRole('STAFF'),
+  asyncHandler(async (req, res) => {
+    const limit = Number(req.query.limit) || 50;
+    res.json({ entries: await auditService.listRecentAudit(limit) });
   }),
 );

@@ -110,7 +110,7 @@ export default function Select({
       </button>
 
       {open && (
-        <div className="drop absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+        <div className="drop absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
           <div ref={listRef} role="listbox" className="max-h-64 overflow-y-auto p-1.5">
             {options.map((o, i) => {
               const isSelected = o.value === value;

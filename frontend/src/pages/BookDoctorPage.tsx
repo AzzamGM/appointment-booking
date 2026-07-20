@@ -19,14 +19,27 @@ import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
 import { specialtyLabel } from '../lib/labels';
 import { formatDate, formatMoney, formatTime } from '../lib/format';
-import { btnPrimary, card, errorText, label, mutedText, pageTitle, select } from '../lib/ui';
+import { doctorAvatar, img, serviceIcon, specialtyIcon } from '../lib/images';
+import Pic from '../components/Pic';
+import Loading from '../components/Loading';
+import Select from '../components/Select';
+import { btnPrimary, card, errorText, label, mutedText, pageTitle } from '../lib/ui';
 import type {
   Appointment,
+  Clinic,
   DayAvailability,
   DoctorDetail,
   MonthAvailability,
+  PatientRef,
   Service,
 } from '../types';
+
+type Payment = 'cash' | 'card';
+
+const PAYMENT_OPTIONS: Array<{ value: Payment; icon: string; title: string; hint: string }> = [
+  { value: 'cash', icon: img.cashNote, title: 'Cash at clinic', hint: 'Pay at the front desk' },
+  { value: 'card', icon: img.creditCard, title: 'Card at clinic', hint: 'All major cards accepted' },
+];
 
 /** Local-calendar YYYY-MM-DD for a Date the picker hands us. */
 function toYMD(d: Date): string {
@@ -40,7 +53,7 @@ function toYM(d: Date): string {
 
 function StepBadge({ n }: { n: number }) {
   return (
-    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white dark:bg-teal-500 dark:text-slate-950">
+    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white dark:bg-teal-500 dark:text-slate-950">
       {n}
     </span>
   );
@@ -56,6 +69,23 @@ export default function BookDoctorPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [serviceId, setServiceId] = useState('');
+  const [payment, setPayment] = useState<Payment | null>(null);
+  // Front-desk flow: which patient this booking is for.
+  const [bookingFor, setBookingFor] = useState('');
+  const isStaff = user?.role === 'STAFF';
+
+  // For showing the clinic's phone number in the booking summary.
+  const clinics = useQuery({
+    queryKey: ['clinics'],
+    queryFn: () => api<{ clinics: Clinic[] }>('/clinics'),
+  });
+
+  // Staff pick a patient to book on behalf of.
+  const patients = useQuery({
+    queryKey: ['patients'],
+    enabled: isStaff,
+    queryFn: () => api<{ patients: PatientRef[] }>('/patients'),
+  });
 
   const doctor = useQuery({
     queryKey: ['doctor', id],
@@ -93,10 +123,20 @@ export default function BookDoctorPage() {
     mutationFn: () =>
       api<Appointment>('/appointments', {
         method: 'POST',
-        body: { slotId: selectedSlotId, serviceId },
+        body: {
+          slotId: selectedSlotId,
+          serviceId,
+          // Staff book on behalf of the selected patient (backend verifies role).
+          ...(isStaff && bookingFor ? { patientId: bookingFor } : {}),
+          // The payment picker is frontend-only; the choice rides along in the
+          // free-text notes field the API already accepts.
+          ...(payment ? { notes: `Payment preference: ${payment} at clinic` } : {}),
+        },
       }),
     onSuccess: (appt) => {
       setSelectedSlotId(null);
+      setPayment(null);
+      setBookingFor('');
       dayAvailability.refetch();
       monthAvailability.refetch();
       toast.success(
@@ -143,11 +183,22 @@ export default function BookDoctorPage() {
         </svg>
         All doctors
       </button>
-      <h1 className={pageTitle}>{doc.name}</h1>
-      <p className={`mb-6 mt-0.5 ${mutedText}`}>
-        {specialtyLabel(doc.specialty)}
-        {doc.bio ? `. ${doc.bio}` : ''}
-      </p>
+      <div className="mb-6 flex items-center gap-4">
+        <Pic
+          src={doctorAvatar(doc.name)}
+          alt=""
+          fit="cover"
+          className="h-20 w-20 shrink-0 rounded-full bg-teal-50 dark:bg-teal-500/10"
+        />
+        <div>
+          <h1 className={pageTitle}>{doc.name}</h1>
+          <p className={`mt-0.5 flex items-center gap-1.5 ${mutedText}`}>
+            <Pic src={specialtyIcon[doc.specialty]} className="h-5 w-5" />
+            {specialtyLabel(doc.specialty)}
+            {doc.bio ? `. ${doc.bio}` : ''}
+          </p>
+        </div>
+      </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* ---- Step 1: pick a date on the month calendar ---- */}
@@ -173,9 +224,9 @@ export default function BookDoctorPage() {
             />
           </div>
           {monthAvailability.isFetching && (
-            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-              Checking availability...
-            </p>
+            <div className="mt-1">
+              <Loading text="Checking availability..." />
+            </div>
           )}
           {monthAvailability.data?.days.length === 0 && !monthAvailability.isFetching && (
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -188,24 +239,12 @@ export default function BookDoctorPage() {
         <div className={`${card} p-4`}>
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
             <StepBadge n={2} /> Pick a time
+            <Pic src={img.clock} className="h-5 w-5" />
           </h2>
 
           {!selectedDate && (
             <div className="flex flex-col items-center gap-2 py-10 text-center">
-              <svg
-                className="text-slate-300 dark:text-slate-700"
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M16 2v4M8 2v4M3 10h18" />
-              </svg>
+              <Pic src={img.calendar} className="h-12 w-12 opacity-80" />
               <p className={mutedText}>Select an available date on the calendar first.</p>
             </div>
           )}
@@ -247,50 +286,119 @@ export default function BookDoctorPage() {
 
               {selectedSlotId && (
                 <div className="rise mt-4 space-y-3 border-t border-slate-100 pt-4 dark:border-slate-800">
-                  <label className="block">
+                  {isStaff && (
+                    <div>
+                      <span className={`${label} flex items-center gap-1.5`}>
+                        <Pic src={img.customerServiceAgent} className="h-4 w-4" />
+                        Booking for (front desk)
+                      </span>
+                      <Select
+                        value={bookingFor}
+                        onChange={setBookingFor}
+                        placeholder="Choose a patient..."
+                        options={(patients.data?.patients ?? []).map((p) => ({
+                          value: p.id,
+                          label: `${p.fullName} · ${p.email}`,
+                        }))}
+                      />
+                    </div>
+                  )}
+                  <div>
                     <span className={label}>Visit type</span>
-                    <select
-                      className={select}
+                    <Select
                       value={serviceId}
-                      onChange={(e) => setServiceId(e.target.value)}
-                    >
-                      <option value="">Choose a visit type...</option>
-                      {services.data?.services.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} · {s.durationMinutes}min · {formatMoney(s.price)}
-                          {s.requiresApproval ? ' (needs approval)' : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                      onChange={setServiceId}
+                      placeholder="Choose a visit type..."
+                      options={(services.data?.services ?? []).map((s) => ({
+                        value: s.id,
+                        label: `${s.name} · ${s.durationMinutes}min · ${formatMoney(s.price)}${
+                          s.requiresApproval ? ' (needs approval)' : ''
+                        }`,
+                      }))}
+                    />
+                  </div>
+
+                  {serviceId && (
+                    <div>
+                      <span className={`${label} flex items-center gap-1.5`}>
+                        <Pic src={img.paymentMethod} className="h-5 w-5" />
+                        Payment preference (optional)
+                      </span>
+                      <div className="grid grid-cols-2 gap-2">
+                        {PAYMENT_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setPayment((p) => (p === opt.value ? null : opt.value))}
+                            className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] ${
+                              payment === opt.value
+                                ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-500/25 dark:border-teal-500 dark:bg-teal-500/10'
+                                : 'border-slate-200 bg-slate-50 hover:border-teal-300 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-teal-700'
+                            }`}
+                          >
+                            <Pic src={opt.icon} className="h-9 w-9" />
+                            <span>
+                              <span className="block text-sm font-medium">{opt.title}</span>
+                              <span className="block text-xs text-slate-400 dark:text-slate-500">
+                                {opt.hint}
+                              </span>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {selectedService && selectedSlot && (
                     <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-950">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-500 dark:text-slate-400">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                          <Pic src={serviceIcon(selectedService.name)} className="h-6 w-6" />
                           {formatDate(selectedSlot.startAt)} at {formatTime(selectedSlot.startAt)}{' '}
                           UTC
                         </span>
                         <span className="font-semibold">{formatMoney(selectedService.price)}</span>
                       </div>
-                      <div className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-                        {selectedSlot.clinic.name}, {selectedSlot.clinic.city}
+                      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 dark:text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <Pic src={img.locationPin} className="h-4 w-4" />
+                          {selectedSlot.clinic.name}, {selectedSlot.clinic.city}
+                        </span>
+                        {(() => {
+                          const phone = clinics.data?.clinics.find(
+                            (c) => c.code === selectedSlot.clinic.code,
+                          )?.phone;
+                          return phone ? (
+                            <span className="flex items-center gap-1">
+                              <Pic src={img.phoneCall} className="h-4 w-4" />
+                              {phone}
+                            </span>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                   )}
 
                   {selectedService?.requiresApproval && (
-                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                    <p className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+                      <Pic src={img.information} className="mt-px h-4.5 w-4.5" />
                       This visit type is reviewed by the front desk, so your booking starts as a
                       request.
                     </p>
                   )}
                   <button
-                    disabled={!serviceId || book.isPending}
+                    disabled={!serviceId || book.isPending || (isStaff && !bookingFor)}
                     onClick={() => (user ? book.mutate() : navigate('/login'))}
-                    className={`w-full ${btnPrimary}`}
+                    className={`flex w-full items-center justify-center gap-2 ${btnPrimary}`}
                   >
-                    {book.isPending ? 'Booking...' : user ? 'Confirm booking' : 'Log in to book'}
+                    {book.isPending && <Pic src={img.hourglass} className="hourglass h-5 w-5" />}
+                    {book.isPending
+                      ? 'Booking...'
+                      : !user
+                        ? 'Log in to book'
+                        : isStaff && !bookingFor
+                          ? 'Select a patient to book for'
+                          : 'Confirm booking'}
                   </button>
                 </div>
               )}

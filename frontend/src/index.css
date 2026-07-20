@@ -3,8 +3,125 @@
 /* Class-based dark mode: `dark:` utilities apply under `<html class="dark">`. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  /* Body text: Outfit — geometric, friendly. Headings: Bricolage Grotesque
+     via the `font-display` utility — high-character, slightly quirky. */
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque", "Outfit", ui-sans-serif, system-ui, sans-serif;
+}
+
 html {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* ---- Aurora backdrop: two slow-drifting color blobs behind everything. ---- */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.aurora::before,
+.aurora::after {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  animation: aurora-drift 20s ease-in-out infinite alternate;
+}
+.aurora::before {
+  width: 32rem;
+  height: 32rem;
+  top: -10rem;
+  left: -8rem;
+  opacity: 0.45;
+  background: radial-gradient(circle, var(--color-teal-300), transparent 70%);
+}
+.aurora::after {
+  width: 28rem;
+  height: 28rem;
+  bottom: -9rem;
+  right: -7rem;
+  opacity: 0.35;
+  background: radial-gradient(circle, var(--color-sky-300), transparent 70%);
+  animation-delay: -10s;
+}
+.dark .aurora::before {
+  opacity: 0.3;
+  background: radial-gradient(circle, var(--color-teal-500), transparent 70%);
+}
+.dark .aurora::after {
+  opacity: 0.25;
+  background: radial-gradient(circle, var(--color-indigo-500), transparent 70%);
+}
+@keyframes aurora-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(3rem, 2rem, 0) scale(1.15);
+  }
+}
+
+/* ---- EKG logo: the heartbeat trace draws itself on a loop. ---- */
+.ekg-trace {
+  stroke-dasharray: 64;
+  stroke-dashoffset: 64;
+  animation: ekg 2.6s linear infinite;
+}
+@keyframes ekg {
+  0% {
+    stroke-dashoffset: 64;
+  }
+  55% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -64;
+  }
+}
+
+/* ---- Icon buttons: any icon inside a button or link tilts and grows on
+   hover, matching the theme toggle. The flipping hourglass is unaffected —
+   its keyframe animation takes precedence over this hover transform. ---- */
+:where(button, a) img {
+  transition: transform 0.15s ease;
+}
+:where(button, a):hover img {
+  transform: rotate(12deg) scale(1.1);
+}
+
+/* ---- Hourglass loading indicator: flip, settle, flip again. ---- */
+.hourglass {
+  animation: hourglass-flip 1.6s ease-in-out infinite;
+}
+@keyframes hourglass-flip {
+  0%,
+  45% {
+    transform: rotate(0deg);
+  }
+  55%,
+  95% {
+    transform: rotate(180deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora::before,
+  .aurora::after {
+    animation: none;
+  }
+  .ekg-trace {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .hourglass {
+    animation: none;
+  }
 }
 
 ::selection {

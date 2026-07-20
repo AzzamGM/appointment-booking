@@ -5,8 +5,11 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    // Listen on all interfaces so other devices on the LAN can open the app.
+    host: true,
     // Forward /api/* to the Express backend so the browser talks to one
-    // origin in dev — no CORS involved.
+    // origin in dev — no CORS involved. Works for LAN devices too, since the
+    // proxying happens server-side on this machine.
     proxy: {
       '/api': 'http://localhost:4000',
     },

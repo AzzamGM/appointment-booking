@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../lib/api';
@@ -5,7 +6,11 @@ import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
 import { specialtyLabel, statusStyle } from '../lib/labels';
 import { formatDate, formatMoney, formatTime } from '../lib/format';
-import { btnDanger, btnPrimary, card, mutedText, pageTitle } from '../lib/ui';
+import { img, serviceIcon, statusIcon } from '../lib/images';
+import { downloadAppointmentIcs } from '../lib/ics';
+import Pic from '../components/Pic';
+import Loading from '../components/Loading';
+import { btnDanger, btnGhost, btnPrimary, card, mutedText, pageTitle } from '../lib/ui';
 import type { Appointment } from '../types';
 
 function AppointmentSkeleton() {
@@ -17,6 +22,54 @@ function AppointmentSkeleton() {
       </div>
       <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
     </div>
+  );
+}
+
+type Rating = 'up' | 'down';
+const ratingKey = (id: string) => `medibook:rating:${id}`;
+
+/**
+ * Thumbs up/down for a completed visit. Frontend-only feedback, remembered in
+ * localStorage — a real ratings endpoint would be a nice backend exercise.
+ */
+function VisitRating({ appointmentId }: { appointmentId: string }) {
+  const toast = useToast();
+  const [rating, setRating] = useState<Rating | null>(
+    () => localStorage.getItem(ratingKey(appointmentId)) as Rating | null,
+  );
+
+  const rate = (r: Rating) => {
+    localStorage.setItem(ratingKey(appointmentId), r);
+    setRating(r);
+    toast.success(r === 'up' ? 'Thanks for the feedback!' : "Sorry to hear that — we'll do better.");
+  };
+
+  if (rating) {
+    return (
+      <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
+        <Pic src={rating === 'up' ? img.thumbsUp : img.thumbDown} className="h-6 w-6" />
+        You rated this visit
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className="text-xs text-slate-400 dark:text-slate-500">How was your visit?</span>
+      <button
+        onClick={() => rate('up')}
+        title="Good visit"
+        className="rounded-lg p-1.5 transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+      >
+        <Pic src={img.thumbsUp} alt="Thumbs up" className="h-6 w-6" />
+      </button>
+      <button
+        onClick={() => rate('down')}
+        title="Not great"
+        className="rounded-lg p-1.5 transition-colors hover:bg-rose-50 dark:hover:bg-rose-500/10"
+      >
+        <Pic src={img.thumbDown} alt="Thumbs down" className="h-6 w-6" />
+      </button>
+    </span>
   );
 }
 
@@ -66,6 +119,7 @@ export default function MyAppointmentsPage() {
 
       {appointments.isLoading && (
         <div className="space-y-3">
+          <Loading text="Loading your appointments..." />
           <AppointmentSkeleton />
           <AppointmentSkeleton />
         </div>
@@ -73,20 +127,7 @@ export default function MyAppointmentsPage() {
 
       {appointments.data?.appointments.length === 0 && (
         <div className={`${card} flex flex-col items-center gap-4 p-10 text-center`}>
-          <svg
-            className="text-slate-300 dark:text-slate-700"
-            width="36"
-            height="36"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect x="3" y="4" width="18" height="18" rx="2" />
-            <path d="M16 2v4M8 2v4M3 10h18" />
-          </svg>
+          <Pic src={img.calendar} className="h-16 w-16 opacity-80" />
           <p className={mutedText}>You have no appointments yet.</p>
           <Link to="/" className={btnPrimary}>
             Find a doctor
@@ -105,37 +146,85 @@ export default function MyAppointmentsPage() {
               <div className="flex items-center gap-3">
                 <span className="font-mono text-lg font-bold tracking-widest">{a.reference}</span>
                 <span
-                  className={`rounded-md px-2 py-0.5 text-xs font-semibold ${statusStyle[a.status]}`}
+                  className={`flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${statusStyle[a.status]}`}
                 >
+                  <Pic src={statusIcon[a.status]} className="h-4.5 w-4.5" />
                   {a.status.replace('_', ' ')}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <span className={mutedText}>{formatMoney(a.service.price)}</span>
+                {a.status === 'COMPLETED' && <VisitRating appointmentId={a.id} />}
                 {(a.status === 'REQUESTED' || a.status === 'CONFIRMED') && (
-                  <button
-                    onClick={() => cancel.mutate(a.id)}
-                    disabled={cancel.isPending}
-                    className={btnDanger}
-                  >
-                    {cancel.isPending && cancel.variables === a.id ? 'Cancelling...' : 'Cancel'}
-                  </button>
+                  <>
+                    <button
+                      onClick={() => downloadAppointmentIcs(a)}
+                      title="Download an .ics file for your calendar app"
+                      className={`flex items-center gap-1.5 ${btnGhost}`}
+                    >
+                      <Pic src={img.save} className="h-5 w-5" />
+                      Save to calendar
+                    </button>
+                    <button
+                      onClick={() => cancel.mutate(a.id)}
+                      disabled={cancel.isPending}
+                      className={`flex items-center gap-1.5 ${btnDanger}`}
+                    >
+                      {cancel.isPending && cancel.variables === a.id ? (
+                        <>
+                          <Pic src={img.hourglass} className="hourglass h-5 w-5" />
+                          Cancelling...
+                        </>
+                      ) : (
+                        <>
+                          <Pic src={img.delete} className="h-5 w-5" />
+                          Cancel
+                        </>
+                      )}
+                    </button>
+                  </>
                 )}
               </div>
             </div>
 
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-slate-100 pt-3 text-sm dark:border-slate-800">
-              <span className="font-medium">{a.service.name}</span>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-100 pt-3 text-sm dark:border-slate-800">
+              <span className="flex items-center gap-1.5 font-medium">
+                <Pic src={serviceIcon(a.service.name)} className="h-6 w-6" />
+                {a.service.name}
+              </span>
               <span className="text-slate-500 dark:text-slate-400">
                 {a.doctor.name} · {specialtyLabel(a.doctor.specialty)}
               </span>
-              <span className="text-slate-500 dark:text-slate-400">
+              <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                <Pic src={img.clock} className="h-4.5 w-4.5" />
                 {formatDate(a.startAt)} · {formatTime(a.startAt)} to {formatTime(a.endAt)} UTC
               </span>
-              <span className="text-slate-500 dark:text-slate-400">
+              <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                <Pic src={img.locationPin} className="h-4.5 w-4.5" />
                 {a.clinic.name}, {a.clinic.city}
               </span>
             </div>
+
+            {a.prescriptions.length > 0 && (
+              <div className="mt-3 space-y-1.5 rounded-xl bg-teal-50/60 p-3 dark:bg-teal-500/5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
+                  Prescribed medication
+                </p>
+                {a.prescriptions.map((p) => (
+                  <p key={p.id} className="flex items-start gap-2 text-sm">
+                    <Pic src={img.medicine} className="mt-0.5 h-5 w-5" />
+                    <span>
+                      <span className="font-medium">{p.medication}</span> — {p.dosage},{' '}
+                      {p.frequency}
+                      {p.instructions ? `. ${p.instructions}` : ''}
+                      <span className="ml-1 text-xs text-slate-400 dark:text-slate-500">
+                        ({p.prescribedBy})
+                      </span>
+                    </span>
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>

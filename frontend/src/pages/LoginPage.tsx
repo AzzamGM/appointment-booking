@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { ApiError } from '../lib/api';
 import { useToast } from '../lib/toast';
+import { img } from '../lib/images';
+import Pic from '../components/Pic';
 import { btnPrimary, card, input, label } from '../lib/ui';
 
 export default function LoginPage() {
@@ -60,13 +62,20 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute inset-y-0 right-2 my-auto h-6 rounded px-1.5 text-xs font-medium text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              title={showPassword ? 'Hide password' : 'Show password'}
+              className="absolute inset-y-0 right-2 my-auto flex h-9 w-9 items-center justify-center rounded transition-opacity hover:opacity-70"
             >
-              {showPassword ? 'Hide' : 'Show'}
+              <Pic src={showPassword ? img.hide : img.unhide} className="h-6 w-6" />
             </button>
           </div>
         </label>
-        <button type="submit" disabled={busy} className={`w-full ${btnPrimary}`}>
+        <button
+          type="submit"
+          disabled={busy}
+          className={`flex w-full items-center justify-center gap-2 ${btnPrimary}`}
+        >
+          {busy && <Pic src={img.hourglass} className="hourglass h-5 w-5" />}
           {busy ? 'Logging in...' : 'Log in'}
         </button>
         <p className="text-center text-sm text-slate-500 dark:text-slate-400">

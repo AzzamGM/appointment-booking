@@ -85,6 +85,16 @@ export interface DayAvailability {
   }>;
 }
 
+export interface Prescription {
+  id: string;
+  medication: string;
+  dosage: string;
+  frequency: string;
+  instructions: string | null;
+  prescribedBy: string;
+  createdAt: string;
+}
+
 export interface Appointment {
   id: string;
   reference: string;
@@ -102,5 +112,22 @@ export interface Appointment {
   };
   patient: { id: string; fullName: string };
   notes: string | null;
+  prescriptions: Prescription[];
   createdAt: string;
+}
+
+/** GET /api/patients (staff) — pick a patient for front-desk booking. */
+export interface PatientRef {
+  id: string;
+  fullName: string;
+  email: string;
+}
+
+/** GET /api/audit (staff) / GET /api/patients/me/activity */
+export interface AuditEntry {
+  id: string;
+  action: string;
+  detail: string | null;
+  createdAt: string;
+  user: { id: string; fullName: string; role: Role } | null;
 }
