@@ -1,7 +1,3 @@
-// Prescriptions attached to an appointment. Doctors prescribe for visits on
-// their own schedule; front-desk staff may enter one on a doctor's behalf.
-// Patients see them via the appointment DTO (appointment.service includes
-// prescriptions in every appointment payload).
 import { AppointmentStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { BadRequestError, ForbiddenError, NotFoundError } from '../middleware/errors';
@@ -26,17 +22,14 @@ export async function createPrescription(
   });
   if (!appt) throw new NotFoundError('Appointment not found');
 
-  if (requester.role === 'PATIENT') {
-    throw new ForbiddenError('Only doctors or staff can prescribe medication');
+  if (requester.role !== 'DOCTOR') {
+    throw new ForbiddenError('Only the doctor seeing the patient can prescribe medication');
   }
-  if (requester.role === 'DOCTOR') {
-    const doctor = await prisma.doctor.findUnique({ where: { userId: requester.id } });
-    if (!doctor || appt.slot.doctorId !== doctor.id) {
-      throw new ForbiddenError('This appointment is not on your schedule');
-    }
+  const doctor = await prisma.doctor.findUnique({ where: { userId: requester.id } });
+  if (!doctor || appt.slot.doctorId !== doctor.id) {
+    throw new ForbiddenError('This appointment is not on your schedule');
   }
 
-  // Medication belongs to a visit that actually happened (or is happening).
   if (
     appt.status !== AppointmentStatus.CHECKED_IN &&
     appt.status !== AppointmentStatus.COMPLETED

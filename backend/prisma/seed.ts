@@ -1,9 +1,3 @@
-// Seed script: realistic sample data for local development.
-// Run with: npm run db:seed   (wipe + reseed is safe to repeat)
-//
-// Creates: 2 clinics, 6 doctors across specialties, 6 services, recurring
-// availability, ~3 weeks of bookable slots, a few pre-existing appointments,
-// one time-off block, and one login per role.
 import { AppointmentStatus, PrismaClient, SlotStatus, Specialty } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { generateSlots } from '../src/services/slotGeneration.service';
@@ -15,7 +9,6 @@ const CLINICS = [
   { code: 'JED', name: 'MediBook Corniche', address: 'Corniche Road, Ash Shati', city: 'Jeddah', phone: '+966 12 555 0188' },
 ];
 
-// clinics: which branch codes the doctor practices at.
 const DOCTORS = [
   { name: 'Dr. Abdullah Al-Qahtani', specialty: Specialty.GENERAL_PRACTICE, clinics: ['RYD', 'JED'], bio: 'Family medicine, 12 years of practice.' },
   { name: 'Dr. Sara Al-Harbi', specialty: Specialty.GENERAL_PRACTICE, clinics: ['JED'], bio: 'Preventive care and chronic condition management.' },
@@ -25,7 +18,6 @@ const DOCTORS = [
   { name: 'Dr. Faisal Al-Mutairi', specialty: Specialty.ORTHOPEDICS, clinics: ['RYD', 'JED'], bio: 'Sports injuries and joint health.' },
 ];
 
-// Prices are in Saudi Riyal (SAR).
 const SERVICES = [
   { name: 'General Consultation', durationMinutes: 30, price: 150, requiresApproval: false, specialties: [Specialty.GENERAL_PRACTICE] },
   { name: 'Follow-up Visit', durationMinutes: 15, price: 80, requiresApproval: false, specialties: [Specialty.GENERAL_PRACTICE, Specialty.PEDIATRICS, Specialty.DERMATOLOGY, Specialty.CARDIOLOGY, Specialty.ORTHOPEDICS] },
@@ -35,8 +27,6 @@ const SERVICES = [
   { name: 'ECG & Consultation', durationMinutes: 45, price: 450, requiresApproval: true, specialties: [Specialty.CARDIOLOGY] },
 ];
 
-// Weekly availability per doctor (index into DOCTORS). Wall times; the
-// dumb generator below treats them as UTC (see Gap 4 notes on timezones).
 const AVAILABILITY: Array<{ doctor: number; clinic: string; days: number[]; start: string; end: string }> = [
   { doctor: 0, clinic: 'RYD', days: [1, 3, 5], start: '09:00', end: '17:00' },
   { doctor: 0, clinic: 'JED', days: [2, 4], start: '10:00', end: '16:00' },
@@ -48,13 +38,11 @@ const AVAILABILITY: Array<{ doctor: number; clinic: string; days: number[]; star
   { doctor: 5, clinic: 'JED', days: [2, 5], start: '09:00', end: '13:00' },
 ];
 
-const SLOT_DAYS = 21; // generate slots this many days ahead
+const SLOT_DAYS = 21;
 const SLOT_MINUTES = 30;
 
 async function main() {
   console.log('Clearing existing data...');
-  // Dev-only convenience: wipe everything so reseeding is deterministic.
-  // Order respects FK constraints (children first).
   await prisma.appointment.deleteMany();
   await prisma.slot.deleteMany();
   await prisma.timeOff.deleteMany();
@@ -66,7 +54,7 @@ async function main() {
   await prisma.user.deleteMany();
 
   console.log('Seeding clinics...');
-  const clinics = new Map<string, string>(); // code -> id
+  const clinics = new Map<string, string>();
   for (const c of CLINICS) {
     const created = await prisma.clinic.create({ data: c });
     clinics.set(created.code, created.id);
@@ -92,7 +80,6 @@ async function main() {
         name: d.name,
         specialty: d.specialty,
         bio: d.bio,
-        // The first doctor gets the seeded DOCTOR login account.
         userId: i === 0 ? doctorUser.id : undefined,
         clinics: { create: d.clinics.map((code) => ({ clinicId: clinics.get(code)! })) },
       },
@@ -127,23 +114,18 @@ async function main() {
   const DAY_MS = 24 * 60 * 60 * 1000;
   const ymd = (d: Date) => d.toISOString().slice(0, 10);
 
-  // Time off is created BEFORE slot generation so the Gap 4 generator can
-  // skip it: Dr. Al-Shehri gets no bookable slots during her conference.
   console.log('Seeding a time-off block (Dr. Al-Shehri, dermatology conference)...');
   const offStart = new Date(today.getTime() + 8 * DAY_MS);
   await prisma.timeOff.create({
     data: {
-      doctorId: doctorIds[3], // Dr. Al-Shehri
+      doctorId: doctorIds[3],
       startAt: offStart,
       endAt: new Date(offStart.getTime() + 3 * DAY_MS),
       reason: 'Dermatology conference',
     },
   });
 
-  // Expand every doctor's availability rules into concrete slots using the
-  // real Gap 4 generator (the deliberately dumb seed-only loop it replaced
-  // ignored time off and treated idempotency as someone else's problem).
-  console.log('Generating slots via the Gap 4 generator...');
+  console.log('Generating slots...');
   let slotCount = 0;
   for (const doctorId of doctorIds) {
     const result = await generateSlots({
@@ -156,8 +138,6 @@ async function main() {
   }
 
   console.log('Seeding some pre-existing appointments...');
-  // Book Aisha into a few upcoming slots so "My appointments" isn't empty
-  // and the calendar shows realistic holes.
   const bookableSlots = await prisma.slot.findMany({
     where: { status: SlotStatus.OPEN, doctorId: doctorIds[0] },
     orderBy: { startAt: 'asc' },
@@ -166,7 +146,6 @@ async function main() {
   const preBookings: Array<{ service: string; status: AppointmentStatus; bookedBy: string }> = [
     { service: 'General Consultation', status: AppointmentStatus.CONFIRMED, bookedBy: patient.id },
     { service: 'Annual Physical', status: AppointmentStatus.REQUESTED, bookedBy: patient.id },
-    // A front-desk booking, to show the on-behalf flow in data form.
     { service: 'Follow-up Visit', status: AppointmentStatus.CONFIRMED, bookedBy: staff.id },
   ];
   for (const [i, slot] of bookableSlots.entries()) {

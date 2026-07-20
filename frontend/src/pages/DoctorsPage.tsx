@@ -7,7 +7,16 @@ import { doctorAvatar, img, specialtyIcon } from '../lib/images';
 import Pic from '../components/Pic';
 import Loading from '../components/Loading';
 import Select from '../components/Select';
-import { btnGhost, btnPrimary, card, errorText, input, label, mutedText, pageTitle } from '../lib/ui';
+import {
+  btnGhost,
+  btnPrimary,
+  card,
+  errorText,
+  inputWithIcon,
+  label,
+  mutedText,
+  pageTitle,
+} from '../lib/ui';
 import type { Clinic, Doctor, Specialty } from '../types';
 
 const HEALTH_TIPS: Array<{ icon: string; text: string }> = [
@@ -15,9 +24,11 @@ const HEALTH_TIPS: Array<{ icon: string; text: string }> = [
   { icon: img.lungs, text: 'Breathe easy: lung function checks take under 15 minutes.' },
   { icon: img.physicalCheck, text: 'A blood pressure check is free with any visit.' },
   { icon: img.medicine, text: 'Bring your current medication list to your appointment.' },
+  { icon: img.injection, text: 'Flu shots are walk-in at both clinics, no appointment needed.' },
+  { icon: img.xray, text: 'On-site imaging: most X-rays are read the same day.' },
+  { icon: img.weighingScale, text: 'Ask the front desk for a weight and BMI check at your visit.' },
 ];
 
-/** A small rotating banner of clinic tips — one fades in every few seconds. */
 function HealthTips() {
   const [i, setI] = useState(0);
   useEffect(() => {
@@ -88,8 +99,6 @@ export default function DoctorsPage() {
 
       <HealthTips />
 
-      {/* relative z-20 lifts this card's stacking context above the doctor
-          cards below, so the open dropdown isn't painted under them. */}
       <div className={`${card} relative z-20 mt-4 p-4 sm:p-5`}>
         <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
           <Pic src={img.filter} className="h-6 w-6" />
@@ -123,12 +132,18 @@ export default function DoctorsPage() {
           </div>
           <label className="block">
             <span className={label}>Name</span>
-            <input
-              className={input}
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search by name..."
-            />
+            <div className="relative">
+              <Pic
+                src={img.search}
+                className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 opacity-60"
+              />
+              <input
+                className={inputWithIcon}
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Search by name..."
+              />
+            </div>
           </label>
         </div>
       </div>
@@ -136,7 +151,7 @@ export default function DoctorsPage() {
       <div className="mt-6 space-y-3">
         {doctors.isLoading && (
           <>
-            <Loading text="Finding doctors..." />
+            <Loading text="Finding doctors..." inline />
             <DoctorSkeleton />
             <DoctorSkeleton />
             <DoctorSkeleton />

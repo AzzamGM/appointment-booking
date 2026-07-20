@@ -1,4 +1,3 @@
-// TODO_TESTS section 5, Gap 6: time off cascading into the live schedule.
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { AppointmentStatus, SlotStatus } from '@prisma/client';
@@ -8,7 +7,6 @@ import { createDoctorScenario, createUserWithToken, defaultSlotTimes } from './h
 
 const app = createApp();
 
-/** A range comfortably containing the scenario's default slots (a week out). */
 function rangeAroundDefaultSlots() {
   const [first] = defaultSlotTimes();
   const startAt = new Date(first.getTime() - 60 * 60 * 1000);
@@ -48,11 +46,10 @@ describe('POST /api/doctors/:id/time-off', () => {
   });
 
   it('BLOCKs open slots and cancels overlapping appointments, keeping their slots off the market', async () => {
-    const scenario = await createDoctorScenario(); // two OPEN slots
+    const scenario = await createDoctorScenario();
     const patient = await createUserWithToken('PATIENT');
     const staff = await createUserWithToken('STAFF');
 
-    // One of the two slots carries a real CONFIRMED appointment.
     const appt = await prisma.appointment.create({
       data: {
         reference: 'VICTIM',
@@ -74,18 +71,15 @@ describe('POST /api/doctors/:id/time-off', () => {
       .send({ ...rangeAroundDefaultSlots(), reason: 'conference' });
 
     expect(res.status).toBe(201);
-    expect(res.body.blockedSlots).toBe(2); // the OPEN one and the BOOKED one
+    expect(res.body.blockedSlots).toBe(2);
     expect(res.body.cancelledAppointments).toEqual(['VICTIM']);
 
     const apptAfter = await prisma.appointment.findUniqueOrThrow({ where: { id: appt.id } });
     expect(apptAfter.status).toBe(AppointmentStatus.CANCELLED);
 
-    // Both slots BLOCKED — including the cancelled appointment's slot, which
-    // must NOT go back to OPEN (the doctor is away).
     const slots = await prisma.slot.findMany({ where: { doctorId: scenario.doctor.id } });
     expect(slots.map((s) => s.status)).toEqual([SlotStatus.BLOCKED, SlotStatus.BLOCKED]);
 
-    // And the availability calendar shows nothing bookable that day.
     const date = defaultSlotTimes()[0].toISOString().slice(0, 10);
     const day = await request(app)
       .get(`/api/doctors/${scenario.doctor.id}/availability`)
@@ -109,8 +103,6 @@ describe('POST /api/doctors/:id/time-off', () => {
       .set('Authorization', `Bearer ${staff.token}`)
       .send(body);
 
-    // The overlap check refuses the duplicate outright, so no appointment
-    // can be cancelled (or emailed about) twice.
     expect(second.status).toBe(409);
     const timeOffRows = await prisma.timeOff.count({ where: { doctorId: scenario.doctor.id } });
     expect(timeOffRows).toBe(1);

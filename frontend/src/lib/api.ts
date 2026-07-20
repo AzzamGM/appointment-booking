@@ -1,7 +1,5 @@
-// Minimal typed fetch wrapper. Attaches the JWT when present and normalizes
-// the backend's { error: { message } } shape into a thrown ApiError.
-
 const TOKEN_KEY = 'medibook.token';
+export const USER_KEY = 'medibook.user';
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -41,6 +39,11 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 
   const data = await res.json().catch(() => null);
   if (!res.ok) {
+    if (res.status === 401 && token) {
+      clearToken();
+      localStorage.removeItem(USER_KEY);
+      window.location.assign('/login');
+    }
     const message = data?.error?.message ?? `Request failed (${res.status})`;
     throw new ApiError(res.status, message, data?.error?.details);
   }

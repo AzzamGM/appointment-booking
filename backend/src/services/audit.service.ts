@@ -1,5 +1,3 @@
-// Append-only audit trail. Recording is best-effort: a failed audit write
-// logs to the console but never fails the user-facing action it describes.
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 
@@ -32,7 +30,6 @@ export async function recordAudit(
   }
 }
 
-/** Staff view: recent activity across every user. */
 export async function listRecentAudit(limit = 50) {
   const entries = await prisma.auditLog.findMany({
     orderBy: { createdAt: 'desc' },
@@ -42,7 +39,6 @@ export async function listRecentAudit(limit = 50) {
   return entries.map(toAuditDto);
 }
 
-/** A user's own activity trail. */
 export async function listUserAudit(userId: string, limit = 50) {
   const entries = await prisma.auditLog.findMany({
     where: { userId },

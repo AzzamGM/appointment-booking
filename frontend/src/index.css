@@ -1,11 +1,10 @@
 @import "tailwindcss";
 
-/* Class-based dark mode: `dark:` utilities apply under `<html class="dark">`. */
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* Body text: Outfit — geometric, friendly. Headings: Bricolage Grotesque
-     via the `font-display` utility — high-character, slightly quirky. */
+
   --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Bricolage Grotesque", "Outfit", ui-sans-serif, system-ui, sans-serif;
 }
@@ -14,7 +13,7 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ---- Aurora backdrop: two slow-drifting color blobs behind everything. ---- */
+
 .aurora {
   position: fixed;
   inset: 0;
@@ -29,6 +28,8 @@ html {
   border-radius: 9999px;
   filter: blur(90px);
   animation: aurora-drift 20s ease-in-out infinite alternate;
+
+  will-change: transform;
 }
 .aurora::before {
   width: 32rem;
@@ -64,7 +65,7 @@ html {
   }
 }
 
-/* ---- EKG logo: the heartbeat trace draws itself on a loop. ---- */
+
 .ekg-trace {
   stroke-dasharray: 64;
   stroke-dashoffset: 64;
@@ -82,17 +83,22 @@ html {
   }
 }
 
-/* ---- Icon buttons: any icon inside a button or link tilts and grows on
-   hover, matching the theme toggle. The flipping hourglass is unaffected —
-   its keyframe animation takes precedence over this hover transform. ---- */
+
 :where(button, a) img {
   transition: transform 0.15s ease;
 }
-:where(button, a):hover img {
+:where(button, a):hover img,
+
+:where(button, a).is-active img {
   transform: rotate(12deg) scale(1.1);
 }
 
-/* ---- Hourglass loading indicator: flip, settle, flip again. ---- */
+:where(button, a) img.no-tilt,
+:where(button, a):hover img.no-tilt {
+  transform: none;
+}
+
+
 .hourglass {
   animation: hourglass-flip 1.6s ease-in-out infinite;
 }
@@ -128,8 +134,7 @@ html {
   background: color-mix(in srgb, var(--color-teal-500) 25%, transparent);
 }
 
-/* Native selects draw their arrow flush against the edge (especially on
-   Windows), so replace it with our own chevron and give it breathing room. */
+
 .select-arrow {
   appearance: none;
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
@@ -142,7 +147,7 @@ html {
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
-/* Subtle entrance for list items and panels. */
+
 @keyframes rise {
   from {
     opacity: 0;
@@ -157,13 +162,99 @@ html {
   animation: rise 0.25s ease both;
 }
 
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.fade-in {
+  animation: fade-in 0.3s ease both;
+}
+
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.fade-out {
+  animation: fade-out 0.2s ease both;
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .rise {
+  .rise,
+  .fade-in,
+  .fade-out {
     animation: none;
   }
 }
 
-/* Toasts drop in from above and float back up when leaving. */
+
+.splash-mark {
+  animation: splash-pulse 2s ease-in-out infinite;
+}
+@keyframes splash-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.bounce-dot {
+  animation: bounce-dot 1.1s ease-in-out infinite;
+}
+@keyframes bounce-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  30% {
+    transform: translateY(-9px);
+    opacity: 1;
+  }
+}
+
+.splash-leaving {
+  animation: splash-out 0.45s ease forwards;
+  pointer-events: none;
+}
+@keyframes splash-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-mark,
+  .bounce-dot {
+    animation: none;
+  }
+  .splash-leaving {
+    animation: splash-out 0.45s ease forwards;
+    transform: none;
+  }
+}
+
+
 @keyframes drop {
   from {
     opacity: 0;
@@ -193,7 +284,7 @@ html {
   }
 }
 
-/* react-day-picker: mark dates that have at least one open slot. */
+
 .day-available:not([data-selected]) {
   position: relative;
   font-weight: 600;
@@ -214,7 +305,7 @@ html {
   background: var(--color-teal-500);
 }
 
-/* Match the picker's accent to the app's teal, in both themes. */
+
 .rdp-root {
   --rdp-accent-color: var(--color-teal-600);
   --rdp-accent-background-color: var(--color-teal-50);

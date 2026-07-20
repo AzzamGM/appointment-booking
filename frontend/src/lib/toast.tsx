@@ -70,7 +70,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const dismiss = useCallback((id: number) => {
-    // Two-phase removal so the leave transition can play.
     setToasts((ts) => ts.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
     setTimeout(() => setToasts((ts) => ts.filter((t) => t.id !== id)), 200);
   }, []);

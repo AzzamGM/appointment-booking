@@ -1,6 +1,3 @@
-// Shapes returned by the backend API (kept in sync by hand; generating these
-// from the backend, e.g. with zod or OpenAPI, is a nice later exercise).
-
 export type Role = 'PATIENT' | 'DOCTOR' | 'STAFF';
 
 export type Specialty =
@@ -68,13 +65,11 @@ export interface Service {
   specialties: Specialty[];
 }
 
-/** ?month=YYYY-MM response, drives the calendar's available-date marking. */
 export interface MonthAvailability {
   month: string;
   days: Array<{ date: string; openCount: number }>;
 }
 
-/** ?date=YYYY-MM-DD response, the time slots shown after a date click. */
 export interface DayAvailability {
   date: string;
   slots: Array<{
@@ -110,20 +105,24 @@ export interface Appointment {
     price: number;
     requiresApproval: boolean;
   };
-  patient: { id: string; fullName: string };
+  patient: {
+    id: string | null;
+    fullName: string;
+    isGuest: boolean;
+    email?: string | null;
+    phone?: string | null;
+  };
   notes: string | null;
   prescriptions: Prescription[];
   createdAt: string;
 }
 
-/** GET /api/patients (staff) — pick a patient for front-desk booking. */
 export interface PatientRef {
   id: string;
   fullName: string;
   email: string;
 }
 
-/** GET /api/audit (staff) / GET /api/patients/me/activity */
 export interface AuditEntry {
   id: string;
   action: string;

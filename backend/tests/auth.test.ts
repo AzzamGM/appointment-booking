@@ -1,4 +1,3 @@
-// TODO_TESTS section 1: POST /api/auth/signup and POST /api/auth/login.
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import bcrypt from 'bcryptjs';
@@ -9,7 +8,6 @@ import { prisma } from '../src/lib/prisma';
 
 const app = createApp();
 
-/** A user who can actually log in over HTTP (real bcrypt hash, low rounds for speed). */
 async function createLoginUser(role: Role, email: string) {
   const passwordHash = await bcrypt.hash('password123', 4);
   return prisma.user.create({
@@ -30,7 +28,6 @@ describe('POST /api/auth/signup', () => {
       fullName: 'New Patient',
       role: 'PATIENT',
     });
-    // Not just user.passwordHash — the hash must not appear ANYWHERE.
     expect(JSON.stringify(res.body)).not.toContain('passwordHash');
   });
 
@@ -41,7 +38,7 @@ describe('POST /api/auth/signup', () => {
         email: 'sneaky@test.local',
         password: 'password123',
         fullName: 'Wannabe Staff',
-        role: 'STAFF', // privilege-escalation attempt; must be ignored
+        role: 'STAFF',
       });
 
     expect(res.status).toBe(201);
@@ -97,8 +94,6 @@ describe('POST /api/auth/login', () => {
   });
 
   it('returns 401 for a wrong password, with the SAME message as an unknown email', async () => {
-    // Same message on purpose: if the two cases differed, the endpoint would
-    // double as an email-enumeration oracle ("this address has an account").
     await createLoginUser('PATIENT', 'known@test.local');
 
     const wrongPassword = await request(app)

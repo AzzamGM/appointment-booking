@@ -1,4 +1,3 @@
-// TODO_TESTS section 2: GET /api/doctors and GET /api/doctors/:id.
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { Specialty } from '@prisma/client';
@@ -34,12 +33,9 @@ describe('GET /api/doctors', () => {
   });
 
   it('intersects specialty and clinic filters', async () => {
-    // Three doctors: right specialty + right clinic, right specialty only,
-    // right clinic only. Exactly one survives both filters.
     const match = await createDoctorScenario({ specialty: Specialty.CARDIOLOGY });
-    await createDoctorScenario({ specialty: Specialty.CARDIOLOGY }); // other clinic
+    await createDoctorScenario({ specialty: Specialty.CARDIOLOGY });
     const otherSpecialty = await createDoctorScenario({ specialty: Specialty.PEDIATRICS });
-    // Put the pediatrician into the match clinic too.
     await prisma.doctorClinic.create({
       data: { doctorId: otherSpecialty.doctor.id, clinicId: match.clinic.id },
     });
@@ -71,7 +67,6 @@ describe('GET /api/doctors/:id', () => {
   });
 
   it('includes the weekly schedule sorted by day then start time', async () => {
-    // The scenario seeds (dayOfWeek 1, 09:00). Add rules out of order.
     const { doctor, clinic } = await createDoctorScenario();
     await prisma.availability.createMany({
       data: [

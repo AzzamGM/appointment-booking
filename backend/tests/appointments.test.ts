@@ -1,5 +1,3 @@
-// TODO_TESTS section 3: booking happy path, validation, and per-role
-// object-level authorization on appointments.
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { AppointmentStatus, SlotStatus, Specialty } from '@prisma/client';
@@ -41,7 +39,6 @@ describe('POST /api/appointments — booking', () => {
     const cardio = await createDoctorScenario({ specialty: Specialty.CARDIOLOGY });
     const { token } = await createUserWithToken('PATIENT');
 
-    // Cardiology-only service against a GP slot.
     const res = await book(token, { slotId: gp.slots[0].id, serviceId: cardio.service.id });
 
     expect(res.status).toBe(400);
@@ -163,7 +160,6 @@ describe('GET /api/appointments/:id — object-level authorization', () => {
     const other = await createDoctorScenario();
     const patient = await createUserWithToken('PATIENT');
 
-    // Link a login account to the first doctor.
     const doctorUser = await createUserWithToken('DOCTOR');
     await prisma.doctor.update({
       where: { id: mine.doctor.id },
@@ -199,8 +195,6 @@ describe('GET /api/patients/me/appointments', () => {
     const me = await createUserWithToken('PATIENT');
     const someoneElse = await createUserWithToken('PATIENT');
 
-    // Created directly so createdAt is deterministic (API bookings can land
-    // in the same millisecond, which would make "newest first" ambiguous).
     const now = Date.now();
     const [older, newer] = await Promise.all([
       prisma.appointment.create({
@@ -226,7 +220,6 @@ describe('GET /api/patients/me/appointments', () => {
         },
       }),
     ]);
-    // Someone else's appointment must not leak into my list.
     const foreignSlot = await createDoctorScenario();
     await prisma.appointment.create({
       data: {

@@ -1,5 +1,3 @@
-// POST /api/auth/signup (patients only), POST /api/auth/login (all roles).
-// Fully implemented — see auth.service.ts for why signup can't pick a role.
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from '../middleware/errors';
@@ -21,7 +19,6 @@ export const authRouter = Router();
 authRouter.post(
   '/signup',
   asyncHandler(async (req, res) => {
-    // .parse throws ZodError on bad input; errorHandler turns that into a 400.
     const input = signupSchema.parse(req.body);
     const result = await authService.signup(input);
     res.status(201).json(result);

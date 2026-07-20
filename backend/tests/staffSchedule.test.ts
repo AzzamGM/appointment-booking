@@ -1,5 +1,3 @@
-// TODO_TESTS section 4: POST /api/doctors/:id/availability and the staff
-// overview GET /api/appointments.
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { AppointmentStatus, SlotStatus } from '@prisma/client';
@@ -28,7 +26,7 @@ describe('POST /api/doctors/:id/availability', () => {
 
   it("rejects a clinic the doctor doesn't practice at with 400", async () => {
     const { doctor } = await createDoctorScenario();
-    const otherClinic = (await createDoctorScenario()).clinic; // doctor is not attached here
+    const otherClinic = (await createDoctorScenario()).clinic;
     const staff = await createUserWithToken('STAFF');
 
     const res = await request(app)
@@ -56,10 +54,6 @@ describe('POST /api/doctors/:id/availability', () => {
   });
 
   it('rejects a duplicate availability row with 409 (the DB unique constraint, surfaced by the error middleware)', async () => {
-    // The route itself never checks for duplicates. The
-    // @@unique([doctorId, clinicId, dayOfWeek, startTime]) constraint trips
-    // P2002, and the error middleware maps that to a 409. Constraint as the
-    // guarantee, middleware as the translator.
     const { doctor, clinic } = await createDoctorScenario();
     const staff = await createUserWithToken('STAFF');
     const payload = { ...body, clinicCode: clinic.code };
@@ -82,9 +76,9 @@ describe('GET /api/appointments — staff overview', () => {
   it('lists only future appointments, soonest first', async () => {
     const scenario = await createDoctorScenario({
       slotTimes: [
-        new Date(Date.now() - 24 * 60 * 60 * 1000), // yesterday
-        new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // in 3 days
-        new Date(Date.now() + 1 * 24 * 60 * 60 * 1000), // tomorrow
+        new Date(Date.now() - 24 * 60 * 60 * 1000),
+        new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+        new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
       ],
     });
     const patient = await createUserWithToken('PATIENT');
@@ -109,10 +103,9 @@ describe('GET /api/appointments — staff overview', () => {
       .set('Authorization', `Bearer ${staff.token}`);
 
     expect(res.status).toBe(200);
-    // The past appointment (OVW000) is excluded; the rest sort by start time.
     expect(res.body.appointments.map((a: { reference: string }) => a.reference)).toEqual([
-      'OVW222', // tomorrow
-      'OVW111', // in 3 days
+      'OVW222',
+      'OVW111',
     ]);
   });
 });

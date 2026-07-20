@@ -13,7 +13,8 @@
     "db:studio": "prisma studio",
     "test": "npm run test:db:push && vitest run",
     "test:watch": "vitest",
-    "test:db:push": "cross-env DATABASE_URL=postgresql://medibook:medibook@localhost:5432/medibook_test prisma db push --skip-generate"
+    "test:db:push": "cross-env DATABASE_URL=postgresql://medibook:medibook@localhost:5432/medibook_test prisma db push --skip-generate && npm run test:db:raw",
+    "test:db:raw": "cross-env DATABASE_URL=postgresql://medibook:medibook@localhost:5432/medibook_test tsx scripts/applyRawIndexes.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

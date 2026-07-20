@@ -7,6 +7,12 @@ import { img } from '../lib/images';
 import Pic from '../components/Pic';
 import { btnPrimary, card, input, label } from '../lib/ui';
 
+const SEEDED_LOGINS = [
+  { email: 'patient@medibook.test', role: 'Patient' },
+  { email: 'staff@medibook.test', role: 'Staff' },
+  { email: 'doctor@medibook.test', role: 'Doctor' },
+];
+
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -21,8 +27,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       await login(email, password);
-      toast.success('Logged in successfully.');
-      navigate('/');
+      window.location.assign('/');
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Login failed');
     } finally {
@@ -32,7 +37,10 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto max-w-sm pt-6">
-      <h1 className="mb-1 text-2xl font-bold tracking-tight">Welcome back</h1>
+      <h1 className="mb-1 flex items-center gap-2.5 text-2xl font-bold tracking-tight">
+        <Pic src={img.user} className="h-9 w-9" />
+        Welcome back
+      </h1>
       <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
         Log in to book and manage your visits.
       </p>
@@ -87,10 +95,16 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
-        <div className="rounded-lg bg-slate-50 p-3 text-center text-xs leading-relaxed text-slate-400 dark:bg-slate-950 dark:text-slate-500">
-          Seeded logins (password123):
-          <br />
-          patient@medibook.test · staff@medibook.test · doctor@medibook.test
+        <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-400 dark:bg-slate-950 dark:text-slate-500">
+          <p className="mb-1.5 text-center">Seeded logins (password123):</p>
+          <ul className="flex flex-col gap-1">
+            {SEEDED_LOGINS.map((s) => (
+              <li key={s.email} className="flex items-center justify-between gap-3">
+                <span className="font-mono">{s.email}</span>
+                <span className="shrink-0 uppercase tracking-wide">{s.role}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </form>
     </div>

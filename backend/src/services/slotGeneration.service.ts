@@ -1,50 +1,11 @@
-// Availability -> Slot generation (Gap 4 — IMPLEMENTED).
-//
-// The data model splits scheduling into a RULE and its EXPANSION:
-//
-//   Availability  "Dr. Al-Qahtani works Mon/Wed 09:00-17:00 at Olaya"  (rule)
-//   Slot          "Dr. Al-Qahtani, Olaya, Mon 2026-07-20 09:00-09:30"  (rows)
-//
-// This function performs the expansion. The requirements it satisfies:
-//
-//   1. EXPAND THE RULES. For each date in [from, to), it finds the doctor's
-//      Availability rows whose dayOfWeek matches and cuts the window
-//      [startTime, endTime) into consecutive slots of `slotMinutes`,
-//      dropping a trailing remainder that doesn't fit.
-//
-//   2. RESPECT TIME OFF. A candidate overlapping a TimeOff row is skipped.
-//      The overlap predicate is the classic (slotStart < offEnd &&
-//      slotEnd > offStart): touching endpoints do NOT overlap.
-//
-//   3. IDEMPOTENT. Candidates that overlap ANY existing slot in the range
-//      (same grid or not, OPEN or BOOKED) are skipped, so re-running never
-//      duplicates and never touches a BOOKED slot. createMany additionally
-//      passes skipDuplicates so the @@unique([doctorId, startAt]) constraint
-//      backstops a concurrent generation run.
-//
-//   4. TIMEZONES. Availability.startTime is clinic-local wall time and
-//      Slot.startAt is UTC. This project's clinics (Riyadh/Jeddah) are UTC+3
-//      with no DST, and by project convention wall time is treated as UTC
-//      throughout (the frontend labels times "UTC"). A clinic in a
-//      DST-observing region would break this shortcut: "09:00 local" is not
-//      a fixed UTC offset year-round (transition days have 23/25 hours), so
-//      real multi-timezone support needs per-clinic IANA zones and a
-//      calendar-aware conversion.
-//
-//   5. SERVICE DURATIONS (stretch — not done). Slots are a fixed grid; a
-//      45-minute service booked at 09:00 does not consume the 09:30 slot.
-//      Generating per-service slots or booking multiple contiguous slots
-//      are the two standard designs.
 import { SlotStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { BadRequestError, NotFoundError } from '../middleware/errors';
 
 export interface GenerateSlotsInput {
   doctorId: string;
-  /** Inclusive first day, exclusive last day — both YYYY-MM-DD. */
   from: string;
   to: string;
-  /** Grid size in minutes. The clinic default is 30. */
   slotMinutes: number;
 }
 

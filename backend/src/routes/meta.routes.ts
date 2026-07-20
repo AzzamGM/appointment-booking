@@ -1,12 +1,9 @@
-// Small public reference-data endpoints the frontend uses to populate
-// filters and the booking form. Fully implemented.
 import { Router } from 'express';
 import { prisma } from '../lib/prisma';
 import { asyncHandler } from '../middleware/errors';
 
 export const clinicsRouter = Router();
 
-// GET /api/clinics
 clinicsRouter.get(
   '/',
   asyncHandler(async (_req, res) => {
@@ -26,7 +23,6 @@ clinicsRouter.get(
 
 export const servicesRouter = Router();
 
-// GET /api/services — optionally filtered by the specialty that must perform it
 servicesRouter.get(
   '/',
   asyncHandler(async (req, res) => {

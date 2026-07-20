@@ -1,16 +1,5 @@
-// The two-step calendar booking flow:
-//
-//   Step 1: month calendar. Dates with at least one open slot are marked
-//           (teal dot + bold); every other date is disabled. Data comes
-//           from GET /doctors/:id/availability?month=YYYY-MM.
-//   Step 2: click a date, then the open time slots for that day appear,
-//           from GET /doctors/:id/availability?date=YYYY-MM-DD.
-//           Pick a time + a service, confirm, POST /appointments.
-//
-// The calendar widget itself is react-day-picker (UI is not the learning
-// scope); the availability data behind it is what the backend gaps are about.
-import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/style.css';
@@ -23,7 +12,18 @@ import { doctorAvatar, img, serviceIcon, specialtyIcon } from '../lib/images';
 import Pic from '../components/Pic';
 import Loading from '../components/Loading';
 import Select from '../components/Select';
-import { btnPrimary, card, errorText, label, mutedText, pageTitle } from '../lib/ui';
+import StepBadge from '../components/StepBadge';
+import CardDetails, { DUMMY_CARD, isCardValid, type CardFields } from '../components/CardDetails';
+import GuestDetails, {
+  DUMMY_GUEST,
+  fullPhone,
+  isGuestValid,
+  type GuestFields,
+} from '../components/GuestDetails';
+import Fade from '../components/Fade';
+import OtpDialog from '../components/OtpDialog';
+import { revealStep } from '../lib/scroll';
+import { btnGhost, btnPrimary, card, errorText, label, mutedText, pageTitle } from '../lib/ui';
 import type {
   Appointment,
   Clinic,
@@ -34,14 +34,31 @@ import type {
   Service,
 } from '../types';
 
-type Payment = 'cash' | 'card';
+type Payment = 'clinic' | 'online';
 
-const PAYMENT_OPTIONS: Array<{ value: Payment; icon: string; title: string; hint: string }> = [
-  { value: 'cash', icon: img.cashNote, title: 'Cash at clinic', hint: 'Pay at the front desk' },
-  { value: 'card', icon: img.creditCard, title: 'Card at clinic', hint: 'All major cards accepted' },
+const PAYMENT_OPTIONS: Array<{
+  value: Payment;
+  icon: string;
+  title: string;
+  hint: string;
+  note: string;
+}> = [
+  {
+    value: 'clinic',
+    icon: img.paymentMethod,
+    title: 'Cash or card at clinic',
+    hint: 'Pay at the front desk on the day',
+    note: 'Pay at clinic (cash or card)',
+  },
+  {
+    value: 'online',
+    icon: img.creditCard,
+    title: 'Pay online',
+    hint: 'Card payment when you confirm',
+    note: 'Paying online',
+  },
 ];
 
-/** Local-calendar YYYY-MM-DD for a Date the picker hands us. */
 function toYMD(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
     d.getDate(),
@@ -49,14 +66,6 @@ function toYMD(d: Date): string {
 }
 function toYM(d: Date): string {
   return toYMD(d).slice(0, 7);
-}
-
-function StepBadge({ n }: { n: number }) {
-  return (
-    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white dark:bg-teal-500 dark:text-slate-950">
-      {n}
-    </span>
-  );
 }
 
 export default function BookDoctorPage() {
@@ -68,19 +77,46 @@ export default function BookDoctorPage() {
   const [month, setMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [dateOpen, setDateOpen] = useState(true);
+  const [timesOpen, setTimesOpen] = useState(true);
   const [serviceId, setServiceId] = useState('');
   const [payment, setPayment] = useState<Payment | null>(null);
-  // Front-desk flow: which patient this booking is for.
+  const [cardInfo, setCardInfo] = useState<CardFields>(DUMMY_CARD);
+  const [guestInfo, setGuestInfo] = useState<GuestFields>(DUMMY_GUEST);
+  const [guestBooking, setGuestBooking] = useState<Appointment | null>(null);
+  const [otpOpen, setOtpOpen] = useState(false);
   const [bookingFor, setBookingFor] = useState('');
   const isStaff = user?.role === 'STAFF';
+  const isGuest = !user;
 
-  // For showing the clinic's phone number in the booking summary.
+  const timeCardRef = useRef<HTMLDivElement>(null);
+  const guestRef = useRef<HTMLDivElement>(null);
+  const paymentCardRef = useRef<HTMLDivElement>(null);
+  const paymentOptionsRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const confirmRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedDate) revealStep(timeCardRef);
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (selectedSlotId) revealStep(isGuest ? guestRef : paymentCardRef);
+  }, [selectedSlotId, isGuest]);
+
+  useEffect(() => {
+    if (serviceId) revealStep(paymentOptionsRef);
+  }, [serviceId]);
+
+  useEffect(() => {
+    if (payment) revealStep(payment === 'online' ? cardRef : confirmRef);
+  }, [payment]);
+
   const clinics = useQuery({
     queryKey: ['clinics'],
     queryFn: () => api<{ clinics: Clinic[] }>('/clinics'),
   });
 
-  // Staff pick a patient to book on behalf of.
   const patients = useQuery({
     queryKey: ['patients'],
     enabled: isStaff,
@@ -92,20 +128,17 @@ export default function BookDoctorPage() {
     queryFn: () => api<DoctorDetail>(`/doctors/${id}`),
   });
 
-  // Step 1 data: which dates this month are bookable at all.
   const monthAvailability = useQuery({
     queryKey: ['availability-month', id, toYM(month)],
     queryFn: () => api<MonthAvailability>(`/doctors/${id}/availability?month=${toYM(month)}`),
   });
 
-  // Step 2 data: the concrete times, fetched only once a date is clicked.
   const dayAvailability = useQuery({
     queryKey: ['availability-day', id, selectedDate && toYMD(selectedDate)],
     enabled: !!selectedDate,
     queryFn: () => api<DayAvailability>(`/doctors/${id}/availability?date=${toYMD(selectedDate!)}`),
   });
 
-  // Services this doctor's specialty can perform (for the service dropdown).
   const services = useQuery({
     queryKey: ['services', doctor.data?.specialty],
     enabled: !!doctor.data,
@@ -113,32 +146,38 @@ export default function BookDoctorPage() {
   });
 
   const availableDates = useMemo(() => {
-    // NOTE: the API keys days by UTC date; the picker deals in local dates.
-    // Clinic hours don't straddle midnight, so for most timezones these
-    // coincide, a deliberate simplification (see Gap 4's timezone notes).
     return new Set((monthAvailability.data?.days ?? []).map((d) => d.date));
   }, [monthAvailability.data]);
 
   const book = useMutation({
-    mutationFn: () =>
-      api<Appointment>('/appointments', {
-        method: 'POST',
-        body: {
-          slotId: selectedSlotId,
-          serviceId,
-          // Staff book on behalf of the selected patient (backend verifies role).
-          ...(isStaff && bookingFor ? { patientId: bookingFor } : {}),
-          // The payment picker is frontend-only; the choice rides along in the
-          // free-text notes field the API already accepts.
-          ...(payment ? { notes: `Payment preference: ${payment} at clinic` } : {}),
-        },
-      }),
+    mutationFn: () => {
+      const body = {
+        slotId: selectedSlotId,
+        serviceId,
+        ...(payment ? { notes: PAYMENT_OPTIONS.find((o) => o.value === payment)!.note } : {}),
+      };
+      return isGuest
+        ? api<Appointment>('/appointments/guest', {
+            method: 'POST',
+            body: { ...body, ...guestInfo, phone: fullPhone(guestInfo) },
+          })
+        : api<Appointment>('/appointments', {
+            method: 'POST',
+            body: { ...body, ...(isStaff && bookingFor ? { patientId: bookingFor } : {}) },
+          });
+    },
     onSuccess: (appt) => {
       setSelectedSlotId(null);
       setPayment(null);
       setBookingFor('');
       dayAvailability.refetch();
       monthAvailability.refetch();
+      if (isGuest) {
+        setOtpOpen(false);
+        setGuestBooking(appt);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
       toast.success(
         appt.status === 'REQUESTED'
           ? `Request submitted (ref ${appt.reference}). ${appt.service.name} with ${appt.doctor.name}. The front desk will review and confirm it.`
@@ -149,6 +188,7 @@ export default function BookDoctorPage() {
       );
     },
     onError: (err) => {
+      setOtpOpen(false);
       toast.error(`Booking failed: ${err instanceof ApiError ? err.message : 'unexpected error'}`);
     },
   });
@@ -170,18 +210,60 @@ export default function BookDoctorPage() {
     );
   const doc = doctor.data!;
   const selectedService = services.data?.services.find((s) => s.id === serviceId);
+  const cardReady = payment !== 'online' || isCardValid(cardInfo);
+  const guestReady = !isGuest || isGuestValid(guestInfo);
   const selectedSlot = dayAvailability.data?.slots.find((s) => s.id === selectedSlotId);
+
+  const confirmButton = (
+    <div ref={confirmRef} className="scroll-mt-20">
+      <button
+        disabled={
+          !serviceId ||
+          !payment ||
+          !cardReady ||
+          !guestReady ||
+          book.isPending ||
+          (isStaff && !bookingFor)
+        }
+        onClick={() => (isGuest ? setOtpOpen(true) : book.mutate())}
+        className={`flex w-full items-center justify-center gap-2 ${btnPrimary}`}
+      >
+        {book.isPending && <Pic src={img.hourglass} className="hourglass h-5 w-5" />}
+        {book.isPending
+          ? 'Booking...'
+          : isStaff && !bookingFor
+            ? 'Select a patient to book for'
+            : !payment
+              ? 'Choose a payment method'
+              : !cardReady
+                ? 'Complete your card details'
+                : !guestReady
+                  ? 'Complete your contact details'
+                  : 'Confirm booking'}
+      </button>
+    </div>
+  );
 
   return (
     <div>
       <button
-        onClick={() => navigate('/')}
+        onClick={() => navigate(-1)}
         className="mb-4 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-teal-700 transition-colors hover:bg-teal-50 dark:text-teal-400 dark:hover:bg-teal-500/10"
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
           <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
-        All doctors
+        Back
       </button>
       <div className="mb-6 flex items-center gap-4">
         <Pic
@@ -193,63 +275,149 @@ export default function BookDoctorPage() {
         <div>
           <h1 className={pageTitle}>{doc.name}</h1>
           <p className={`mt-0.5 flex items-center gap-1.5 ${mutedText}`}>
-            <Pic src={specialtyIcon[doc.specialty]} className="h-5 w-5" />
+            <Pic src={specialtyIcon[doc.specialty]} className="h-6 w-6 shrink-0" />
             {specialtyLabel(doc.specialty)}
-            {doc.bio ? `. ${doc.bio}` : ''}
           </p>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* ---- Step 1: pick a date on the month calendar ---- */}
+      {guestBooking && (
+        <div className={`${card} rise mb-6 p-5 sm:p-6`}>
+          <div className="flex flex-wrap items-center gap-3">
+            <Pic src={img.approved} className="h-12 w-12" />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-semibold">
+                {guestBooking.status === 'REQUESTED'
+                  ? 'Request submitted'
+                  : 'Appointment confirmed'}
+              </h2>
+              <p className={mutedText}>
+                {guestBooking.service.name} with {guestBooking.doctor.name} -{' '}
+                {formatDate(guestBooking.startAt)} at {formatTime(guestBooking.startAt)} UTC
+              </p>
+            </div>
+            <span className="font-mono text-lg font-bold tracking-widest text-teal-700 dark:text-teal-300">
+              {guestBooking.reference}
+            </span>
+          </div>
+
+          <p className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+            <Pic src={img.information} className="mt-px h-4.5 w-4.5 shrink-0" />
+            Keep this reference. Guest bookings cannot be viewed or cancelled online, so quote it
+            to the front desk if you need to change anything. We sent the details to{' '}
+            {guestInfo.email}.
+          </p>
+
+          <div className="mt-4 rounded-xl border border-teal-200/70 bg-teal-50/60 p-4 dark:border-teal-800/50 dark:bg-teal-500/5">
+            <p className="flex items-center gap-2 font-semibold">
+              <Pic src={img.addUser} className="h-6 w-6" />
+              Want an easier time next visit?
+            </p>
+            <p className={`mt-1 ${mutedText}`}>
+              With an account your details are filled in for you, and you can see, rate and cancel
+              your appointments without calling the clinic.
+            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <Link
+                to="/signup"
+                className={`flex items-center justify-center gap-2 sm:w-auto ${btnPrimary}`}
+              >
+                <Pic src={img.addUser} className="h-5 w-5" />
+                Create an account
+              </Link>
+              <Link to="/login" className={`text-center ${btnGhost}`}>
+                Log in
+              </Link>
+              <button onClick={() => setGuestBooking(null)} className={`sm:ml-auto ${btnGhost}`}>
+                Book another visit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid items-start gap-6 md:grid-cols-2">
         <div className={`${card} p-4`}>
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
             <StepBadge n={1} /> Pick a date
+            <Pic src={img.calendar} className="h-5 w-5" />
           </h2>
-          <div className="flex justify-center overflow-x-auto">
-            <DayPicker
-            mode="single"
-            month={month}
-            onMonthChange={setMonth}
-            selected={selectedDate}
-            onSelect={(date) => {
-              setSelectedDate(date ?? undefined);
-              setSelectedSlotId(null);
-            }}
-            // A date is clickable only if the month summary says it has
-            // at least one open slot.
-            disabled={(date) => !availableDates.has(toYMD(date))}
-            modifiers={{ available: (date) => availableDates.has(toYMD(date)) }}
-            modifiersClassNames={{ available: 'day-available' }}
-            />
-          </div>
-          {monthAvailability.isFetching && (
-            <div className="mt-1">
-              <Loading text="Checking availability..." />
+          {selectedDate && !dateOpen ? (
+            <div className="rise flex flex-wrap items-center gap-3 rounded-xl border border-teal-200 bg-teal-50/60 p-3 dark:border-teal-800/60 dark:bg-teal-500/5">
+              <Pic src={img.calendar} className="h-8 w-8" />
+              <div className="flex-1">
+                <p className="font-semibold">
+                  {formatDate(`${toYMD(selectedDate)}T00:00:00.000Z`)}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {dayAvailability.data
+                    ? `${dayAvailability.data.slots.length} time ${
+                        dayAvailability.data.slots.length === 1 ? 'slot' : 'slots'
+                      } open`
+                    : 'Checking times...'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setDateOpen(true);
+                  setSelectedDate(undefined);
+                  setSelectedSlotId(null);
+                  setTimesOpen(true);
+                  setServiceId('');
+                  setPayment(null);
+                }}
+                className={btnGhost}
+              >
+                Change
+              </button>
             </div>
-          )}
-          {monthAvailability.data?.days.length === 0 && !monthAvailability.isFetching && (
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              No open slots this month. Try the next one.
-            </p>
+          ) : (
+            <>
+              <div className="relative">
+                <div
+                  className={`flex justify-center overflow-x-auto transition-opacity duration-200 ${
+                    monthAvailability.isFetching ? 'pointer-events-none opacity-40' : ''
+                  }`}
+                >
+                  <DayPicker
+                    mode="single"
+                    month={month}
+                    onMonthChange={setMonth}
+                    selected={selectedDate}
+                    onSelect={(date) => {
+                      setSelectedDate(date ?? undefined);
+                      setSelectedSlotId(null);
+                      setTimesOpen(true);
+                      setDateOpen(!date);
+                    }}
+                    disabled={(date) => !availableDates.has(toYMD(date))}
+                    modifiers={{ available: (date) => availableDates.has(toYMD(date)) }}
+                    modifiersClassNames={{ available: 'day-available' }}
+                  />
+                </div>
+                {monthAvailability.isFetching && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loading text="Checking availability..." />
+                  </div>
+                )}
+              </div>
+              {monthAvailability.data?.days.length === 0 && !monthAvailability.isFetching && (
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  No open slots this month. Try the next one.
+                </p>
+              )}
+            </>
           )}
         </div>
 
-        {/* ---- Step 2: pick a time + service, then confirm ---- */}
-        <div className={`${card} p-4`}>
+        {selectedDate && (
+        <div ref={timeCardRef} className={`${card} rise scroll-mt-20 p-4`}>
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
             <StepBadge n={2} /> Pick a time
             <Pic src={img.clock} className="h-5 w-5" />
           </h2>
 
-          {!selectedDate && (
-            <div className="flex flex-col items-center gap-2 py-10 text-center">
-              <Pic src={img.calendar} className="h-12 w-12 opacity-80" />
-              <p className={mutedText}>Select an available date on the calendar first.</p>
-            </div>
-          )}
-
-          {selectedDate && dayAvailability.isFetching && !dayAvailability.data && (
+          {dayAvailability.isFetching && !dayAvailability.data && (
             <div className="flex flex-wrap gap-2">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
@@ -260,152 +428,255 @@ export default function BookDoctorPage() {
             </div>
           )}
 
-          {selectedDate && dayAvailability.data && (
+          {dayAvailability.data && (
             <>
-              <div className="flex flex-wrap gap-2">
-                {dayAvailability.data.slots.map((slot) => (
-                  <button
-                    key={slot.id}
-                    onClick={() => setSelectedSlotId(slot.id)}
-                    className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-all active:scale-95 ${
-                      selectedSlotId === slot.id
-                        ? 'border-teal-600 bg-teal-600 text-white shadow-sm dark:border-teal-500 dark:bg-teal-500 dark:text-slate-950'
-                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-teal-400 hover:bg-teal-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-teal-600 dark:hover:bg-teal-500/10'
-                    }`}
-                    title={`${slot.clinic.name}, ${slot.clinic.city}`}
-                  >
-                    {formatTime(slot.startAt)}
-                  </button>
-                ))}
-                {dayAvailability.data.slots.length === 0 && (
-                  <p className={mutedText}>
-                    No open times left on this day. It may have just filled up.
-                  </p>
-                )}
-              </div>
-
-              {selectedSlotId && (
-                <div className="rise mt-4 space-y-3 border-t border-slate-100 pt-4 dark:border-slate-800">
-                  {isStaff && (
-                    <div>
-                      <span className={`${label} flex items-center gap-1.5`}>
-                        <Pic src={img.customerServiceAgent} className="h-4 w-4" />
-                        Booking for (front desk)
-                      </span>
-                      <Select
-                        value={bookingFor}
-                        onChange={setBookingFor}
-                        placeholder="Choose a patient..."
-                        options={(patients.data?.patients ?? []).map((p) => ({
-                          value: p.id,
-                          label: `${p.fullName} · ${p.email}`,
-                        }))}
-                      />
-                    </div>
-                  )}
-                  <div>
-                    <span className={label}>Visit type</span>
-                    <Select
-                      value={serviceId}
-                      onChange={setServiceId}
-                      placeholder="Choose a visit type..."
-                      options={(services.data?.services ?? []).map((s) => ({
-                        value: s.id,
-                        label: `${s.name} · ${s.durationMinutes}min · ${formatMoney(s.price)}${
-                          s.requiresApproval ? ' (needs approval)' : ''
-                        }`,
-                      }))}
-                    />
-                  </div>
-
-                  {serviceId && (
-                    <div>
-                      <span className={`${label} flex items-center gap-1.5`}>
-                        <Pic src={img.paymentMethod} className="h-5 w-5" />
-                        Payment preference (optional)
-                      </span>
-                      <div className="grid grid-cols-2 gap-2">
-                        {PAYMENT_OPTIONS.map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setPayment((p) => (p === opt.value ? null : opt.value))}
-                            className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] ${
-                              payment === opt.value
-                                ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-500/25 dark:border-teal-500 dark:bg-teal-500/10'
-                                : 'border-slate-200 bg-slate-50 hover:border-teal-300 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-teal-700'
-                            }`}
-                          >
-                            <Pic src={opt.icon} className="h-9 w-9" />
-                            <span>
-                              <span className="block text-sm font-medium">{opt.title}</span>
-                              <span className="block text-xs text-slate-400 dark:text-slate-500">
-                                {opt.hint}
-                              </span>
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedService && selectedSlot && (
-                    <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-950">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                          <Pic src={serviceIcon(selectedService.name)} className="h-6 w-6" />
-                          {formatDate(selectedSlot.startAt)} at {formatTime(selectedSlot.startAt)}{' '}
-                          UTC
-                        </span>
-                        <span className="font-semibold">{formatMoney(selectedService.price)}</span>
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 dark:text-slate-500">
-                        <span className="flex items-center gap-1">
-                          <Pic src={img.locationPin} className="h-4 w-4" />
-                          {selectedSlot.clinic.name}, {selectedSlot.clinic.city}
-                        </span>
-                        {(() => {
-                          const phone = clinics.data?.clinics.find(
-                            (c) => c.code === selectedSlot.clinic.code,
-                          )?.phone;
-                          return phone ? (
-                            <span className="flex items-center gap-1">
-                              <Pic src={img.phoneCall} className="h-4 w-4" />
-                              {phone}
-                            </span>
-                          ) : null;
-                        })()}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedService?.requiresApproval && (
-                    <p className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
-                      <Pic src={img.information} className="mt-px h-4.5 w-4.5" />
-                      This visit type is reviewed by the front desk, so your booking starts as a
-                      request.
+              {selectedSlot && !timesOpen ? (
+                <div className="rise flex flex-wrap items-center gap-3 rounded-xl border border-teal-200 bg-teal-50/60 p-3 dark:border-teal-800/60 dark:bg-teal-500/5">
+                  <Pic src={img.clock} className="h-8 w-8" />
+                  <div className="flex-1">
+                    <p className="font-semibold">{formatTime(selectedSlot.startAt)} UTC</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {formatDate(selectedSlot.startAt)} - {selectedSlot.clinic.name}
                     </p>
-                  )}
+                  </div>
                   <button
-                    disabled={!serviceId || book.isPending || (isStaff && !bookingFor)}
-                    onClick={() => (user ? book.mutate() : navigate('/login'))}
-                    className={`flex w-full items-center justify-center gap-2 ${btnPrimary}`}
+                    onClick={() => {
+                      setTimesOpen(true);
+                      setSelectedSlotId(null);
+                      setServiceId('');
+                      setPayment(null);
+                    }}
+                    className={btnGhost}
                   >
-                    {book.isPending && <Pic src={img.hourglass} className="hourglass h-5 w-5" />}
-                    {book.isPending
-                      ? 'Booking...'
-                      : !user
-                        ? 'Log in to book'
-                        : isStaff && !bookingFor
-                          ? 'Select a patient to book for'
-                          : 'Confirm booking'}
+                    Change
                   </button>
                 </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {dayAvailability.data.slots.map((slot) => (
+                    <button
+                      key={slot.id}
+                      onClick={() => {
+                        setSelectedSlotId(slot.id);
+                        setTimesOpen(false);
+                      }}
+                      className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-all active:scale-95 ${
+                        selectedSlotId === slot.id
+                          ? 'border-teal-600 bg-teal-600 text-white shadow-sm dark:border-teal-500 dark:bg-teal-500 dark:text-slate-950'
+                          : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-teal-400 hover:bg-teal-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-teal-600 dark:hover:bg-teal-500/10'
+                      }`}
+                      title={`${slot.clinic.name}, ${slot.clinic.city}`}
+                    >
+                      {formatTime(slot.startAt)}
+                    </button>
+                  ))}
+                  {dayAvailability.data.slots.length === 0 && (
+                    <p className={mutedText}>
+                      No open times left on this day. It may have just filled up.
+                    </p>
+                  )}
+                </div>
               )}
+
             </>
           )}
         </div>
+        )}
+
+        {selectedSlotId && isGuest && (
+          <div ref={guestRef} className={`${card} rise scroll-mt-20 p-4`}>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <StepBadge n={3} /> Your details
+              <Pic src={img.idCard} className="h-5 w-5" />
+            </h2>
+            <div className="space-y-3">
+              <p className={mutedText}>
+                You are booking as a guest, so we need a way to reach you about this visit.
+              </p>
+              <GuestDetails value={guestInfo} onChange={setGuestInfo} />
+            </div>
+          </div>
+        )}
+
+        {selectedSlotId && (
+          <div ref={paymentCardRef} className={`${card} rise scroll-mt-20 p-4`}>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <StepBadge n={isGuest ? 4 : 3} /> Visit and payment
+              <Pic src={img.paymentMethod} className="h-5 w-5" />
+            </h2>
+
+            <div className="space-y-3">
+              {isStaff && (
+                <div>
+                  <span className={`${label} flex items-center gap-1.5`}>
+                    <Pic src={img.customerServiceAgent} className="h-4 w-4" />
+                    Booking for (front desk)
+                  </span>
+                  <Select
+                    value={bookingFor}
+                    onChange={setBookingFor}
+                    placeholder="Choose a patient..."
+                    options={(patients.data?.patients ?? []).map((p) => ({
+                      value: p.id,
+                      label: `${p.fullName} - ${p.email}`,
+                    }))}
+                  />
+                </div>
+              )}
+
+              <div>
+                <span className={label}>Visit type</span>
+                <Select
+                  value={serviceId}
+                  onChange={setServiceId}
+                  placeholder="Choose a visit type..."
+                  dropUp
+                  options={(services.data?.services ?? []).map((s) => ({
+                    value: s.id,
+                    label: s.name,
+                  }))}
+                />
+              </div>
+
+              {selectedService && (
+                <div className="rise">
+                  <span className={`${label} flex items-center gap-1.5`}>
+                    <Pic src={img.cashNote} className="h-5 w-5" />
+                    Cost
+                  </span>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-700 dark:bg-slate-950">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                        <Pic src={serviceIcon(selectedService.name)} className="h-5 w-5" />
+                        {selectedService.name}
+                      </span>
+                      <span>{formatMoney(selectedService.price)}</span>
+                    </div>
+                    <div className="mt-1.5 flex items-center justify-between gap-3 text-xs text-slate-400 dark:text-slate-500">
+                      <span>Appointment length</span>
+                      <span>{selectedService.durationMinutes} min</span>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-3 border-t border-slate-200 pt-2 font-semibold dark:border-slate-800">
+                      <span>Total due at clinic</span>
+                      <span className="text-teal-700 dark:text-teal-300">
+                        {formatMoney(selectedService.price)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {serviceId && (
+              <div
+                ref={paymentOptionsRef}
+                className="grid scroll-mt-20 grid-cols-1 gap-2 sm:grid-cols-2"
+              >
+                {PAYMENT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setPayment(opt.value)}
+                    className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] ${
+                      payment === opt.value
+                        ? 'is-active border-teal-500 bg-teal-50 ring-2 ring-teal-500/25 dark:border-teal-500 dark:bg-teal-500/10'
+                        : 'border-slate-200 bg-slate-50 hover:border-teal-300 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-teal-700'
+                    }`}
+                  >
+                    <Pic src={opt.icon} className="h-9 w-9" />
+                    <span>
+                      <span className="block text-sm font-medium">{opt.title}</span>
+                      <span className="block text-xs text-slate-400 dark:text-slate-500">
+                        {opt.hint}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              )}
+
+              {selectedService && selectedSlot && (
+                <div className="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-950">
+                  <div className="flex items-center gap-2">
+                    <span className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                      <Pic src={img.calendar} className="h-6 w-6" />
+                      {formatDate(selectedSlot.startAt)} at {formatTime(selectedSlot.startAt)} UTC
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 dark:text-slate-500">
+                    <span className="flex items-center gap-1">
+                      <Pic src={img.locationPin} className="h-4 w-4" />
+                      {selectedSlot.clinic.name}, {selectedSlot.clinic.city}
+                    </span>
+                    {(() => {
+                      const phone = clinics.data?.clinics.find(
+                        (c) => c.code === selectedSlot.clinic.code,
+                      )?.phone;
+                      return phone ? (
+                        <span className="flex items-center gap-1">
+                          <Pic src={img.phoneCall} className="h-4 w-4" />
+                          {phone}
+                        </span>
+                      ) : null;
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {selectedService?.requiresApproval && (
+                <p className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
+                  <Pic src={img.information} className="mt-px h-4.5 w-4.5" />
+                  This visit type is reviewed by the front desk, so your booking starts as a
+                  request.
+                </p>
+              )}
+
+              {isGuest ? (
+                <>
+                  <Fade show={payment === 'online'}>
+                    <div
+                      ref={cardRef}
+                      className="scroll-mt-20 space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800"
+                    >
+                      <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        <Pic src={img.creditCard} className="h-5 w-5" />
+                        Card details
+                      </h3>
+                      <CardDetails value={cardInfo} onChange={setCardInfo} />
+                    </div>
+                  </Fade>
+                  {confirmButton}
+                </>
+              ) : (
+                <Fade show={payment !== 'online'}>{confirmButton}</Fade>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!isGuest && (
+          <Fade show={payment === 'online'}>
+            <div ref={cardRef} className={`${card} scroll-mt-20 p-4`}>
+              <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                <Pic src={img.creditCard} className="h-5 w-5" />
+                Card details
+              </h2>
+              <div className="space-y-3">
+                <CardDetails value={cardInfo} onChange={setCardInfo} />
+                {confirmButton}
+              </div>
+            </div>
+          </Fade>
+        )}
       </div>
+
+      {otpOpen && (
+        <OtpDialog
+          phone={fullPhone(guestInfo)}
+          busy={book.isPending}
+          onVerified={() => book.mutate()}
+          onCancel={() => setOtpOpen(false)}
+        />
+      )}
     </div>
   );
 }

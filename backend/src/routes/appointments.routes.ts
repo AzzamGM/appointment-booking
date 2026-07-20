@@ -1,4 +1,3 @@
-// Appointment endpoints. All require authentication; role rules per route.
 import { Router } from 'express';
 import { z } from 'zod';
 import { AppointmentStatus, type Role } from '@prisma/client';
@@ -13,17 +12,41 @@ const createAppointmentSchema = z.object({
   slotId: z.string().min(1),
   serviceId: z.string().min(1),
   notes: z.string().max(500).optional(),
-  patientId: z.string().optional(), // honored for STAFF only (front-desk booking)
+  patientId: z.string().optional(),
 });
 
 function requester(req: { user?: { sub: string; role: Role } }): appointmentService.Requester {
   return { id: req.user!.sub, role: req.user!.role };
 }
 
+const guestAppointmentSchema = createAppointmentSchema
+  .omit({ patientId: true })
+  .extend({
+    fullName: z.string().min(1).max(100),
+    email: z.string().email(),
+    phone: z
+      .string()
+      .trim()
+      .regex(/^\+?[\d\s-]{9,20}$/, 'Enter a valid phone number'),
+  });
+
+export const guestAppointmentsRouter = Router();
+
+guestAppointmentsRouter.post(
+  '/guest',
+  asyncHandler(async (req, res) => {
+    const { fullName, email, phone, ...input } = guestAppointmentSchema.parse(req.body);
+    const appointment = await appointmentService.createGuestAppointment({
+      ...input,
+      guest: { fullName, email, phone },
+    });
+    res.status(201).json(appointment);
+  }),
+);
+
 export const appointmentsRouter = Router();
 appointmentsRouter.use(authenticate);
 
-// GET /api/appointments — staff overview of upcoming appointments
 appointmentsRouter.get(
   '/',
   requireRole('STAFF'),
@@ -32,9 +55,6 @@ appointmentsRouter.get(
   }),
 );
 
-// POST /api/appointments — ⚠️ intentionally race-prone (Gap 5), see
-// appointment.service.ts. Patients book for themselves; staff may pass
-// patientId to book on a patient's behalf.
 appointmentsRouter.post(
   '/',
   requireRole('PATIENT', 'STAFF'),
@@ -45,7 +65,6 @@ appointmentsRouter.post(
   }),
 );
 
-// GET /api/appointments/:id — patient owner, the slot's doctor, or staff
 appointmentsRouter.get(
   '/:id',
   asyncHandler(async (req, res) => {
@@ -53,10 +72,6 @@ appointmentsRouter.get(
   }),
 );
 
-// The three lifecycle endpoints below all funnel through the Gap 1 state
-// machine and therefore return 501 until it exists.
-
-// PATCH /api/appointments/:id/cancel — patient (own) or staff
 appointmentsRouter.patch(
   '/:id/cancel',
   requireRole('PATIENT', 'STAFF'),
@@ -67,7 +82,6 @@ appointmentsRouter.patch(
   }),
 );
 
-// PATCH /api/appointments/:id/check-in — staff only (front desk action)
 appointmentsRouter.patch(
   '/:id/check-in',
   requireRole('STAFF'),
@@ -78,20 +92,17 @@ appointmentsRouter.patch(
   }),
 );
 
-// PATCH /api/appointments/:id/status — staff, generic transition
-// (confirm a REQUESTED visit, mark COMPLETED or NO_SHOW, ...)
 const statusSchema = z.object({ status: z.nativeEnum(AppointmentStatus) });
 
 appointmentsRouter.patch(
   '/:id/status',
-  requireRole('STAFF'),
+  requireRole('STAFF', 'DOCTOR'),
   asyncHandler(async (req, res) => {
     const { status } = statusSchema.parse(req.body);
     res.json(await appointmentService.changeStatus(req.params.id, status, requester(req)));
   }),
 );
 
-// POST /api/appointments/:id/prescriptions — doctor (own schedule) or staff
 const createPrescriptionSchema = z.object({
   medication: z.string().min(1).max(120),
   dosage: z.string().min(1).max(60),
@@ -101,7 +112,7 @@ const createPrescriptionSchema = z.object({
 
 appointmentsRouter.post(
   '/:id/prescriptions',
-  requireRole('DOCTOR', 'STAFF'),
+  requireRole('DOCTOR'),
   asyncHandler(async (req, res) => {
     const input = createPrescriptionSchema.parse(req.body);
     const prescription = await prescriptionService.createPrescription(
@@ -113,11 +124,9 @@ appointmentsRouter.post(
   }),
 );
 
-// Mounted at /api/patients — provides GET /api/patients/me/appointments
 export const patientsRouter = Router();
 patientsRouter.use(authenticate);
 
-// GET /api/patients — staff only: pick a patient for front-desk booking.
 patientsRouter.get(
   '/',
   requireRole('STAFF'),
@@ -138,7 +147,6 @@ patientsRouter.get(
   }),
 );
 
-// GET /api/patients/me/activity — a user's own audit trail.
 patientsRouter.get(
   '/me/activity',
   asyncHandler(async (req, res) => {
@@ -146,7 +154,6 @@ patientsRouter.get(
   }),
 );
 
-// Mounted at /api/audit — staff-only view of recent activity clinic-wide.
 export const auditRouter = Router();
 auditRouter.use(authenticate);
 

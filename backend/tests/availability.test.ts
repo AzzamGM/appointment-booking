@@ -1,16 +1,3 @@
-// FULL EXAMPLE TEST — the reference for tests you'll write (see TODO_TESTS.md).
-//
-// Anatomy of an integration test here:
-//   1. Build the exact world you need with the factories in tests/helpers.ts
-//      (the DB is truncated before every test by tests/setup.ts).
-//   2. Drive the real HTTP surface with supertest — no port, no mocks; the
-//      request goes through routing, validation, service, and Postgres.
-//   3. Assert on status + body shape, and on the edges (missing params,
-//      booked slots excluded) — not just the happy path.
-//
-// This file covers BOTH shapes of GET /api/doctors/:id/availability:
-//   ?month=YYYY-MM   -> calendar summary (which dates have open slots)
-//   ?date=YYYY-MM-DD -> day detail (the exact times)
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { SlotStatus } from '@prisma/client';
@@ -20,7 +7,6 @@ import { createDoctorScenario, toDateParam, toMonthParam } from './helpers';
 
 const app = createApp();
 
-// Fixed, far-future instants make assertions exact (no clock involved).
 const T = (iso: string) => new Date(iso);
 
 describe('GET /api/doctors/:id/availability?month=', () => {
@@ -75,7 +61,6 @@ describe('GET /api/doctors/:id/availability?month=', () => {
 describe('GET /api/doctors/:id/availability?date=', () => {
   it('lists the open slots of that day, sorted by time, with clinic info', async () => {
     const { doctor, clinic } = await createDoctorScenario({
-      // Inserted out of order on purpose — the API must sort.
       slotTimes: [T('2030-06-03T14:00:00.000Z'), T('2030-06-03T09:00:00.000Z')],
     });
 
@@ -112,7 +97,7 @@ describe('GET /api/doctors/:id/availability?date=', () => {
   });
 
   it('works with helper-relative dates too (self-consistency check)', async () => {
-    const { doctor, slots } = await createDoctorScenario(); // default: 2 slots in a week
+    const { doctor, slots } = await createDoctorScenario();
     const date = toDateParam(slots[0].startAt);
 
     const res = await request(app)

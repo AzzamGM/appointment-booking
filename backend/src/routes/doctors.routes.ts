@@ -1,4 +1,3 @@
-// Doctor search + availability (public/patient), schedule management (staff).
 import { Router } from 'express';
 import { z } from 'zod';
 import { Specialty } from '@prisma/client';
@@ -10,24 +9,25 @@ import {
   NotFoundError,
 } from '../middleware/errors';
 import { dayDetail, monthSummary } from '../services/availability.service';
+import { listDoctorAppointments } from '../services/appointment.service';
 import { generateSlots } from '../services/slotGeneration.service';
 import { createTimeOff } from '../services/timeOff.service';
 
 export const doctorsRouter = Router();
 
-// ---------------------------------------------------------------------------
-// GET /api/doctors — public. Filter by specialty and/or clinic code.
-//
-// Gap 3 (done): Doctor.specialty and DoctorClinic.clinicId are indexed now,
-// and the name filter runs in the database (ILIKE via mode: 'insensitive')
-// instead of fetching everything and filtering in JS. At this table size an
-// index for the ILIKE itself (pg_trgm) is not worth it; the win is not
-// shipping every row over the wire.
-// ---------------------------------------------------------------------------
+doctorsRouter.get(
+  '/me/appointments',
+  authenticate,
+  requireRole('DOCTOR'),
+  asyncHandler(async (req, res) => {
+    res.json({ appointments: await listDoctorAppointments(req.user!.sub) });
+  }),
+);
+
 const listDoctorsSchema = z.object({
   specialty: z.nativeEnum(Specialty).optional(),
-  clinic: z.string().optional(), // clinic code, e.g. "RYD"
-  q: z.string().optional(), // name contains, case-insensitive
+  clinic: z.string().optional(),
+  q: z.string().optional(),
 });
 
 doctorsRouter.get(
@@ -65,12 +65,6 @@ doctorsRouter.get(
   }),
 );
 
-// ---------------------------------------------------------------------------
-// GET /api/doctors/:id/availability — public. Two query shapes, one for each
-// step of the calendar flow:
-//   ?month=YYYY-MM     -> { month, days: [{ date, openCount }] }
-//   ?date=YYYY-MM-DD   -> { date, slots: [{ id, startAt, endAt, clinic }] }
-// ---------------------------------------------------------------------------
 const availabilityQuerySchema = z
   .object({
     month: z.string().regex(/^\d{4}-\d{2}$/, 'month must be YYYY-MM').optional(),
@@ -93,10 +87,6 @@ doctorsRouter.get(
   }),
 );
 
-// ---------------------------------------------------------------------------
-// GET /api/doctors/:id — public. Profile + weekly schedule.
-// (Mounted after the literal subpaths above so they win.)
-// ---------------------------------------------------------------------------
 doctorsRouter.get(
   '/:id',
   asyncHandler(async (req, res) => {
@@ -128,12 +118,6 @@ doctorsRouter.get(
   }),
 );
 
-// ---------------------------------------------------------------------------
-// POST /api/doctors/:id/availability — staff. Set a recurring weekly window.
-// Fully implemented (it's a plain insert). Note the honest consequence:
-// until Gap 4 is done, new availability produces NO bookable slots, because
-// rule -> slots expansion is the stubbed algorithm.
-// ---------------------------------------------------------------------------
 const createAvailabilitySchema = z
   .object({
     clinicCode: z.string().min(2).max(5),
@@ -178,10 +162,6 @@ doctorsRouter.post(
   }),
 );
 
-// ---------------------------------------------------------------------------
-// POST /api/doctors/:id/slots/generate — staff. Expand availability into
-// bookable slots (Gap 4, implemented in slotGeneration.service.ts).
-// ---------------------------------------------------------------------------
 const generateSlotsSchema = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -199,12 +179,6 @@ doctorsRouter.post(
   }),
 );
 
-// ---------------------------------------------------------------------------
-// POST /api/doctors/:id/time-off — staff. Block out a doctor's time.
-// Gap 6 (implemented): the cascade lives in src/services/timeOff.service.ts,
-// which blocks slots, cancels overlapping appointments through the Gap 1
-// state machine in one transaction, and mock-notifies patients after commit.
-// ---------------------------------------------------------------------------
 const timeOffSchema = z
   .object({
     startAt: z.string().datetime(),

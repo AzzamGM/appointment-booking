@@ -1,10 +1,8 @@
-// TODO_TESTS section 5, Gap 4: the Availability -> Slot expansion.
 import { describe, expect, it } from 'vitest';
 import { SlotStatus } from '@prisma/client';
 import { prisma } from '../src/lib/prisma';
 import { generateSlots } from '../src/services/slotGeneration.service';
 
-// 2030-06-03 is a Monday (dayOfWeek 1); fixed dates keep assertions exact.
 const MONDAY = '2030-06-03';
 const T = (iso: string) => new Date(iso);
 
@@ -66,8 +64,6 @@ describe('generateSlots', () => {
       slotMinutes: 30,
     });
 
-    // 09:00-10:45 fits three 30-minute slots; the 10:30-11:00 one would
-    // spill past 10:45 and must not be created.
     expect(result.created).toBe(3);
   });
 
@@ -95,7 +91,6 @@ describe('generateSlots', () => {
       where: { doctorId: doctor.id },
       orderBy: { startAt: 'asc' },
     });
-    // Touching endpoints do not overlap: 09:00-09:30 and 10:30-11:00 survive.
     expect(slots.map((s) => s.startAt.toISOString())).toEqual([
       '2030-06-03T09:00:00.000Z',
       '2030-06-03T10:30:00.000Z',

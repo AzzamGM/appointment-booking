@@ -1,13 +1,7 @@
-// Test data factories. Each test creates exactly the world it needs.
 import { Role, SlotStatus, Specialty } from '@prisma/client';
 import { prisma } from '../src/lib/prisma';
 import { signToken } from '../src/middleware/auth';
 
-/**
- * Create a user directly in the DB and mint a token for them.
- * (Bypasses bcrypt on purpose — hashing is slow and signup already has its
- * own tests. The stored hash is junk; these users never log in via HTTP.)
- */
 export async function createUserWithToken(role: Role = 'PATIENT') {
   const user = await prisma.user.create({
     data: {
@@ -22,7 +16,6 @@ export async function createUserWithToken(role: Role = 'PATIENT') {
 
 export interface ScenarioOptions {
   specialty?: Specialty;
-  /** UTC instants for the OPEN slots to create (30 minutes each). */
   slotTimes?: Date[];
   serviceRequiresApproval?: boolean;
 }
@@ -33,16 +26,10 @@ function inDays(days: number, hourUtc: number, minute = 0): Date {
   return d;
 }
 
-/** Default: two open slots a week from now, 10:00 and 10:30 UTC. */
 export function defaultSlotTimes(): Date[] {
   return [inDays(7, 10, 0), inDays(7, 10, 30)];
 }
 
-/**
- * Create a complete bookable world: a clinic, a doctor with a weekly
- * availability rule, a matching service, and OPEN Slot rows at the given
- * times. Returns everything a test needs to search, view, or book.
- */
 export async function createDoctorScenario(opts: ScenarioOptions = {}) {
   const {
     specialty = Specialty.GENERAL_PRACTICE,
@@ -100,12 +87,10 @@ export async function createDoctorScenario(opts: ScenarioOptions = {}) {
   return { clinic, doctor, service, slots };
 }
 
-/** YYYY-MM-DD (UTC) for a Date — matches the availability API's date param. */
 export function toDateParam(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-/** YYYY-MM (UTC) for a Date — matches the availability API's month param. */
 export function toMonthParam(date: Date): string {
   return date.toISOString().slice(0, 7);
 }

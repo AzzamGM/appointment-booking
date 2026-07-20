@@ -1,9 +1,6 @@
-// Tiny auth context: token + user in localStorage, login/signup/logout.
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import { api, clearToken, setToken } from './api';
+import { api, clearToken, setToken, USER_KEY } from './api';
 import type { AuthResponse, PublicUser } from '../types';
-
-const USER_KEY = 'medibook.user';
 
 interface AuthContextValue {
   user: PublicUser | null;

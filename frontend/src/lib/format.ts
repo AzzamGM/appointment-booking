@@ -7,7 +7,6 @@ export function formatMoney(amount: number): string {
   }).format(amount);
 }
 
-// Times are shown in UTC to match how the backend stores/searches them.
 export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', {
     hour: '2-digit',

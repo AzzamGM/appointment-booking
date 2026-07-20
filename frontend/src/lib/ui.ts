@@ -1,5 +1,3 @@
-// Shared class strings so every page uses the same visual vocabulary.
-
 export const pageTitle = 'font-display text-2xl font-bold tracking-tight sm:text-3xl';
 
 export const card =
@@ -9,6 +7,8 @@ export const input =
   'w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 transition-colors placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-teal-400 dark:focus:ring-teal-400/25';
 
 export const select = `${input} select-arrow`;
+
+export const inputWithIcon = input.replace('px-3.5', 'pl-10 pr-3.5');
 
 export const label = 'mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400';
 

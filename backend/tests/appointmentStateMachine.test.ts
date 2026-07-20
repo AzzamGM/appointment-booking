@@ -1,10 +1,3 @@
-// TODO_TESTS section 5, Gap 1: the state machine, tested two ways.
-//
-//   1. Table-driven unit test of transitionAppointment — all 36 (from, to)
-//      pairs, no DB involved (it is a pure function).
-//   2. Integration tests of the lifecycle endpoints: cancel re-OPENs the
-//      slot, check-in of a REQUESTED appointment is refused, no-show leaves
-//      the slot BOOKED.
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { AppointmentStatus, SlotStatus } from '@prisma/client';
@@ -18,7 +11,6 @@ const app = createApp();
 
 const ALL = Object.values(AppointmentStatus);
 
-/** The single source of truth for what is legal, mirroring a clinic day. */
 const LEGAL: Record<AppointmentStatus, AppointmentStatus[]> = {
   REQUESTED: [AppointmentStatus.CONFIRMED, AppointmentStatus.CANCELLED],
   CONFIRMED: [AppointmentStatus.CHECKED_IN, AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW],
@@ -70,7 +62,7 @@ describe('lifecycle endpoints', () => {
   });
 
   it('check-in of a REQUESTED appointment returns 409', async () => {
-    const { staff, appointment } = await bookedAppointment(true); // REQUESTED
+    const { staff, appointment } = await bookedAppointment(true);
 
     const res = await request(app)
       .patch(`/api/appointments/${appointment.id}/check-in`)
@@ -78,11 +70,11 @@ describe('lifecycle endpoints', () => {
 
     expect(res.status).toBe(409);
     const inDb = await prisma.appointment.findUniqueOrThrow({ where: { id: appointment.id } });
-    expect(inDb.status).toBe(AppointmentStatus.REQUESTED); // unchanged
+    expect(inDb.status).toBe(AppointmentStatus.REQUESTED);
   });
 
   it('no-show leaves the slot BOOKED (the time was consumed)', async () => {
-    const { scenario, staff, appointment } = await bookedAppointment(); // CONFIRMED
+    const { scenario, staff, appointment } = await bookedAppointment();
 
     const res = await request(app)
       .patch(`/api/appointments/${appointment.id}/status`)

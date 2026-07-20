@@ -3,14 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useSettings } from '../lib/settings';
 import { useToast } from '../lib/toast';
 import { specialtyLabel, statusStyle } from '../lib/labels';
 import { formatDate, formatMoney, formatTime } from '../lib/format';
 import { img, serviceIcon, statusIcon } from '../lib/images';
-import { downloadAppointmentIcs } from '../lib/ics';
 import Pic from '../components/Pic';
 import Loading from '../components/Loading';
-import { btnDanger, btnGhost, btnPrimary, card, mutedText, pageTitle } from '../lib/ui';
+import { btnDanger, btnPrimary, card, mutedText, pageTitle } from '../lib/ui';
 import type { Appointment } from '../types';
 
 function AppointmentSkeleton() {
@@ -28,10 +28,6 @@ function AppointmentSkeleton() {
 type Rating = 'up' | 'down';
 const ratingKey = (id: string) => `medibook:rating:${id}`;
 
-/**
- * Thumbs up/down for a completed visit. Frontend-only feedback, remembered in
- * localStorage — a real ratings endpoint would be a nice backend exercise.
- */
 function VisitRating({ appointmentId }: { appointmentId: string }) {
   const toast = useToast();
   const [rating, setRating] = useState<Rating | null>(
@@ -77,6 +73,19 @@ export default function MyAppointmentsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { notifications } = useSettings();
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyReference = async (reference: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(reference);
+      setCopiedId(id);
+      toast.success(`Reference ${reference} copied to your clipboard.`);
+      window.setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 2000);
+    } catch {
+      toast.error('Your browser blocked clipboard access.');
+    }
+  };
 
   const appointments = useQuery({
     queryKey: ['my-appointments'],
@@ -84,9 +93,6 @@ export default function MyAppointmentsPage() {
     queryFn: () => api<{ appointments: Appointment[] }>('/patients/me/appointments'),
   });
 
-  // Cancelling currently returns 501, since the appointment state machine is
-  // Gap 1 in the backend LEARNING_GUIDE. Once you implement it, the error
-  // toast below turns into the success one.
   const cancel = useMutation({
     mutationFn: (id: string) => api<Appointment>(`/appointments/${id}/cancel`, { method: 'PATCH' }),
     onSuccess: () => {
@@ -119,7 +125,7 @@ export default function MyAppointmentsPage() {
 
       {appointments.isLoading && (
         <div className="space-y-3">
-          <Loading text="Loading your appointments..." />
+          <Loading text="Loading your appointments..." inline />
           <AppointmentSkeleton />
           <AppointmentSkeleton />
         </div>
@@ -127,16 +133,47 @@ export default function MyAppointmentsPage() {
 
       {appointments.data?.appointments.length === 0 && (
         <div className={`${card} flex flex-col items-center gap-4 p-10 text-center`}>
-          <Pic src={img.calendar} className="h-16 w-16 opacity-80" />
+          <Pic src={img.doctorAppointment} className="h-20 w-20 opacity-90" />
           <p className={mutedText}>You have no appointments yet.</p>
-          <Link to="/" className={btnPrimary}>
-            Find a doctor
+          <Link to="/" className={`flex items-center gap-2 ${btnPrimary}`}>
+            <Pic src={img.addCalendar} className="h-5 w-5" />
+            Book an appointment
           </Link>
         </div>
       )}
 
       <div className="space-y-3">
-        {appointments.data?.appointments.map((a, i) => (
+        {appointments.data?.appointments.map((a, i) => {
+          const copied = copiedId === a.id;
+          const canCancel = a.status === 'REQUESTED' || a.status === 'CONFIRMED';
+          const canRate = a.status === 'COMPLETED';
+          const actions =
+            canCancel || canRate ? (
+              <div className="flex flex-wrap items-center gap-3">
+                {canRate && <VisitRating appointmentId={a.id} />}
+                {canCancel && (
+                  <button
+                    onClick={() => cancel.mutate(a.id)}
+                    disabled={cancel.isPending}
+                    className={`flex items-center gap-1.5 ${btnDanger}`}
+                  >
+                    {cancel.isPending && cancel.variables === a.id ? (
+                      <>
+                        <Pic src={img.hourglass} className="hourglass h-5 w-5" />
+                        Cancelling...
+                      </>
+                    ) : (
+                      <>
+                        <Pic src={img.delete} className="h-5 w-5" />
+                        Cancel
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            ) : null;
+
+          return (
           <div
             key={a.id}
             className={`${card} rise p-4 hover:shadow-md`}
@@ -144,7 +181,21 @@ export default function MyAppointmentsPage() {
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-lg font-bold tracking-widest">{a.reference}</span>
+                <button
+                  onClick={() => copyReference(a.reference, a.id)}
+                  title={copied ? 'Copied' : 'Copy reference'}
+                  aria-label={`Copy reference ${a.reference}`}
+                  className="flex items-center gap-1.5 rounded-lg px-1.5 py-1 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <span
+                    className={`font-mono text-lg font-bold leading-none tracking-widest transition-colors ${
+                      copied ? 'text-teal-600 dark:text-teal-400' : ''
+                    }`}
+                  >
+                    {copied ? 'Copied' : a.reference}
+                  </span>
+                  <Pic src={copied ? img.approved : img.copy} className="no-tilt h-6 w-6" />
+                </button>
                 <span
                   className={`flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${statusStyle[a.status]}`}
                 >
@@ -152,39 +203,7 @@ export default function MyAppointmentsPage() {
                   {a.status.replace('_', ' ')}
                 </span>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className={mutedText}>{formatMoney(a.service.price)}</span>
-                {a.status === 'COMPLETED' && <VisitRating appointmentId={a.id} />}
-                {(a.status === 'REQUESTED' || a.status === 'CONFIRMED') && (
-                  <>
-                    <button
-                      onClick={() => downloadAppointmentIcs(a)}
-                      title="Download an .ics file for your calendar app"
-                      className={`flex items-center gap-1.5 ${btnGhost}`}
-                    >
-                      <Pic src={img.save} className="h-5 w-5" />
-                      Save to calendar
-                    </button>
-                    <button
-                      onClick={() => cancel.mutate(a.id)}
-                      disabled={cancel.isPending}
-                      className={`flex items-center gap-1.5 ${btnDanger}`}
-                    >
-                      {cancel.isPending && cancel.variables === a.id ? (
-                        <>
-                          <Pic src={img.hourglass} className="hourglass h-5 w-5" />
-                          Cancelling...
-                        </>
-                      ) : (
-                        <>
-                          <Pic src={img.delete} className="h-5 w-5" />
-                          Cancel
-                        </>
-                      )}
-                    </button>
-                  </>
-                )}
-              </div>
+              {actions && <div className="hidden sm:block">{actions}</div>}
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-100 pt-3 text-sm dark:border-slate-800">
@@ -192,12 +211,16 @@ export default function MyAppointmentsPage() {
                 <Pic src={serviceIcon(a.service.name)} className="h-6 w-6" />
                 {a.service.name}
               </span>
+              <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                <Pic src={img.cashNote} className="h-4.5 w-4.5" />
+                {formatMoney(a.service.price)}
+              </span>
               <span className="text-slate-500 dark:text-slate-400">
-                {a.doctor.name} · {specialtyLabel(a.doctor.specialty)}
+                {a.doctor.name} - {specialtyLabel(a.doctor.specialty)}
               </span>
               <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                 <Pic src={img.clock} className="h-4.5 w-4.5" />
-                {formatDate(a.startAt)} · {formatTime(a.startAt)} to {formatTime(a.endAt)} UTC
+                {formatDate(a.startAt)} - {formatTime(a.startAt)} to {formatTime(a.endAt)} UTC
               </span>
               <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
                 <Pic src={img.locationPin} className="h-4.5 w-4.5" />
@@ -205,9 +228,17 @@ export default function MyAppointmentsPage() {
               </span>
             </div>
 
+            {notifications && a.status === 'CONFIRMED' && new Date(a.startAt) > new Date() && (
+              <p className="mt-2.5 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+                <Pic src={img.mobileNotification} className="h-5 w-5" />
+                We'll send a reminder to your phone the day before this visit.
+              </p>
+            )}
+
             {a.prescriptions.length > 0 && (
               <div className="mt-3 space-y-1.5 rounded-xl bg-teal-50/60 p-3 dark:bg-teal-500/5">
-                <p className="text-xs font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
+                  <Pic src={img.pills} className="h-5 w-5" />
                   Prescribed medication
                 </p>
                 {a.prescriptions.map((p) => (
@@ -225,8 +256,15 @@ export default function MyAppointmentsPage() {
                 ))}
               </div>
             )}
+
+            {actions && (
+              <div className="mt-3 border-t border-slate-100 pt-3 sm:hidden dark:border-slate-800">
+                {actions}
+              </div>
+            )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

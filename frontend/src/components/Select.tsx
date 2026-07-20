@@ -1,6 +1,3 @@
-// Custom dropdown to replace native <select>: the OS-rendered option list
-// can't be styled (square corners next to our rounded inputs), so we render
-// our own rounded, animated listbox with keyboard support.
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 
 export interface SelectOption {
@@ -13,6 +10,7 @@ interface SelectProps {
   options: SelectOption[];
   onChange: (value: string) => void;
   placeholder?: string;
+  dropUp?: boolean;
 }
 
 export default function Select({
@@ -20,6 +18,7 @@ export default function Select({
   options,
   onChange,
   placeholder = 'Select...',
+  dropUp = false,
 }: SelectProps) {
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(-1);
@@ -110,7 +109,11 @@ export default function Select({
       </button>
 
       {open && (
-        <div className="drop absolute z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+        <div
+          className={`drop absolute z-50 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900 ${
+            dropUp ? 'bottom-full mb-2 sm:bottom-auto sm:mb-0 sm:mt-2' : 'mt-2'
+          }`}
+        >
           <div ref={listRef} role="listbox" className="max-h-64 overflow-y-auto p-1.5">
             {options.map((o, i) => {
               const isSelected = o.value === value;

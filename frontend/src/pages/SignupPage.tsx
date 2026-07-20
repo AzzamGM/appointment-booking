@@ -40,7 +40,10 @@ export default function SignupPage() {
 
   return (
     <div className="mx-auto max-w-sm pt-6">
-      <h1 className="mb-1 text-2xl font-bold tracking-tight">Create your account</h1>
+      <h1 className="mb-1 flex items-center gap-2.5 text-2xl font-bold tracking-tight">
+        <Pic src={img.addUser} className="h-9 w-9" />
+        Create your account
+      </h1>
       <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
         Sign up as a new patient to start booking.
       </p>
