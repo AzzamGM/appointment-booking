@@ -72,7 +72,7 @@ export default function StaffPage() {
 
   if (user?.role !== 'STAFF') {
     return (
-      <p className="text-sm text-slate-600 dark:text-slate-300">
+      <p className="text-sm text-stone-600 dark:text-stone-300">
         This page is for front-desk staff. Log in as staff@medibook.test to try it.
       </p>
     );
@@ -142,7 +142,7 @@ export default function StaffPage() {
 
       {showLog && (
         <div className={`${card} rise mb-4 p-4`}>
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
             <Pic src={img.information} className="h-5 w-5" />
             Recent activity
           </h2>
@@ -156,11 +156,11 @@ export default function StaffPage() {
                 <Pic src={auditIcon(e.action)} className="mt-0.5 h-5 w-5" />
                 <span className="min-w-0">
                   <span className="font-medium">{e.user?.fullName ?? 'System'}</span>{' '}
-                  <span className="text-slate-500 dark:text-slate-400">{e.action}</span>
+                  <span className="text-stone-500 dark:text-stone-400">{e.action}</span>
                   {e.detail && (
-                    <span className="text-slate-500 dark:text-slate-400"> — {e.detail}</span>
+                    <span className="text-stone-500 dark:text-stone-400"> — {e.detail}</span>
                   )}
-                  <span className="ml-2 text-xs text-slate-400 dark:text-slate-500">
+                  <span className="ml-2 text-xs text-stone-400 dark:text-stone-500">
                     {formatDate(e.createdAt)} {formatTime(e.createdAt)}
                   </span>
                 </span>
@@ -184,7 +184,7 @@ export default function StaffPage() {
           <Loading text="Loading the schedule..." />
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className={`${card} p-3`}>
-              <div className="h-5 w-3/4 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+              <div className="h-5 w-3/4 animate-pulse rounded bg-stone-200 dark:bg-stone-800" />
             </div>
           ))}
         </div>
@@ -201,7 +201,7 @@ export default function StaffPage() {
         {appointments.data?.appointments.map((a, i) => (
           <div
             key={a.id}
-            className={`${card} rise p-3 hover:border-slate-300 dark:hover:border-slate-700`}
+            className={`${card} rise p-3 hover:border-stone-300 dark:hover:border-stone-700`}
             style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -212,21 +212,21 @@ export default function StaffPage() {
                   <Pic src={statusIcon[a.status]} className="h-4.5 w-4.5" />
                   {a.status.replace('_', ' ')}
                 </span>
-                <span className="font-mono text-slate-400 dark:text-slate-500">{a.reference}</span>
+                <span className="font-mono text-stone-400 dark:text-stone-500">{a.reference}</span>
                 <span className="font-medium">{a.patient.fullName}</span>
                 {a.patient.isGuest && (
                   <span
-                    className="flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                    className="flex items-center gap-1.5 rounded-md bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-300"
                     title={`${a.patient.email ?? ''} - ${a.patient.phone ?? ''}`}
                   >
                     <Pic src={img.user} className="h-4 w-4" />
                     Guest - {a.patient.phone}
                   </span>
                 )}
-                <span className="text-slate-500 dark:text-slate-400">
+                <span className="text-stone-500 dark:text-stone-400">
                   {a.service.name} - {a.doctor.name} ({specialtyLabel(a.doctor.specialty)})
                 </span>
-                <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1.5 text-stone-500 dark:text-stone-400">
                   <Pic src={img.clock} className="h-4.5 w-4.5" />
                   {formatDate(a.startAt)} {formatTime(a.startAt)} UTC - {a.clinic.code}
                 </span>
@@ -237,7 +237,7 @@ export default function StaffPage() {
                 {a.status === 'CONFIRMED' &&
                   actionButton(a, 'check-in', img.idCard, 'Check in', 'Checking in...')}
                 {a.status === 'CHECKED_IN' && (
-                  <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
+                  <span className="flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500">
                     <Pic src={img.checkUp} className="h-5 w-5" />
                     With the doctor
                   </span>
@@ -257,7 +257,7 @@ export default function StaffPage() {
             {a.prescriptions.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
                 {a.prescriptions.map((p) => (
-                  <span key={p.id} className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  <span key={p.id} className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
                     <Pic src={img.medicine} className="h-4 w-4" />
                     {p.medication} {p.dosage}, {p.frequency}
                   </span>

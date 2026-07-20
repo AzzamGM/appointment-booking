@@ -112,11 +112,11 @@ export default function GuestDetails({ value, onChange }: GuestDetailsProps) {
       <label className="block">
         <span className={label}>Mobile number</span>
         <div className="flex">
-          <span className="flex shrink-0 items-center rounded-l-xl border border-r-0 border-slate-200 bg-slate-100 px-3 font-mono text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+          <span className="flex shrink-0 items-center rounded-l-xl border border-r-0 border-stone-200 bg-stone-100 px-3 font-mono text-base font-medium tracking-wide text-stone-600 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300">
             {DIAL_CODE}
           </span>
           <input
-            className={`${input} rounded-l-none font-mono ${ring('phone')}`}
+            className={`${input} rounded-l-none font-mono text-base tracking-widest tabular-nums ${ring('phone')}`}
             type="tel"
             inputMode="numeric"
             value={formatPhone(value.phone)}
@@ -131,7 +131,7 @@ export default function GuestDetails({ value, onChange }: GuestDetailsProps) {
         {errorText('phone')}
       </label>
 
-      <p className="flex items-start gap-1.5 text-xs text-slate-400 dark:text-slate-500">
+      <p className="flex items-start gap-1.5 text-xs text-stone-400 dark:text-stone-500">
         <Pic src={img.information} className="mt-px h-4.5 w-4.5" />
         We use these to confirm your visit and to reach you if anything changes.
       </p>

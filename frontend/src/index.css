@@ -21,31 +21,36 @@ html {
   overflow: hidden;
   pointer-events: none;
 }
+/* No `filter: blur()` here on purpose: the radial-gradient already fades to
+   transparent, so it reads as a soft glow without one. A blurred layer this
+   large, animating forever, forces every `backdrop-blur` element above it
+   (cards, header, toasts — most of the page) to re-sample and re-blur on
+   every frame, which was the actual cause of sluggish, unrelated clicks
+   elsewhere on the page (high INP from a background repaint cost, not from
+   the click handlers themselves). */
 .aurora::before,
 .aurora::after {
   content: "";
   position: absolute;
   border-radius: 9999px;
-  filter: blur(90px);
   animation: aurora-drift 20s ease-in-out infinite alternate;
-
   will-change: transform;
 }
 .aurora::before {
-  width: 32rem;
-  height: 32rem;
+  width: 34rem;
+  height: 34rem;
   top: -10rem;
   left: -8rem;
-  opacity: 0.45;
-  background: radial-gradient(circle, var(--color-teal-300), transparent 70%);
+  opacity: 0.6;
+  background: radial-gradient(circle, var(--color-teal-300), transparent 60%);
 }
 .aurora::after {
-  width: 28rem;
-  height: 28rem;
+  width: 30rem;
+  height: 30rem;
   bottom: -9rem;
   right: -7rem;
-  opacity: 0.35;
-  background: radial-gradient(circle, var(--color-sky-300), transparent 70%);
+  opacity: 0.5;
+  background: radial-gradient(circle, var(--color-amber-200), transparent 60%);
   animation-delay: -10s;
 }
 .dark .aurora::before {
@@ -53,8 +58,8 @@ html {
   background: radial-gradient(circle, var(--color-teal-500), transparent 70%);
 }
 .dark .aurora::after {
-  opacity: 0.25;
-  background: radial-gradient(circle, var(--color-indigo-500), transparent 70%);
+  opacity: 0.2;
+  background: radial-gradient(circle, var(--color-amber-400), transparent 70%);
 }
 @keyframes aurora-drift {
   from {
@@ -134,17 +139,58 @@ html {
   background: color-mix(in srgb, var(--color-teal-500) 25%, transparent);
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-stone-300) transparent;
+}
+html.dark * {
+  scrollbar-color: var(--color-stone-600) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-stone-300);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-teal-500);
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background-color: var(--color-stone-600);
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-teal-500);
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+}
+.scroll-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  border-width: 1px;
+}
+
 
 .select-arrow {
   appearance: none;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   background-size: 1rem;
   padding-right: 2.5rem;
 }
 .dark .select-arrow {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a8a29e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 
@@ -315,7 +361,7 @@ html {
   --rdp-accent-background-color: color-mix(in srgb, var(--color-teal-400) 14%, transparent);
 }
 .dark .rdp-root [data-selected="true"] .rdp-day_button {
-  color: var(--color-slate-950);
+  color: var(--color-stone-950);
   background: var(--color-teal-400);
 }
 .rdp-day_button {

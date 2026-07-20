@@ -55,7 +55,7 @@ export default function DoctorSchedulePage() {
 
   if (user?.role !== 'DOCTOR') {
     return (
-      <p className="text-sm text-slate-600 dark:text-slate-300">
+      <p className="text-sm text-stone-600 dark:text-stone-300">
         This page is for doctors. Log in as doctor@medibook.test to try it.
       </p>
     );
@@ -95,10 +95,10 @@ export default function DoctorSchedulePage() {
       <div className="space-y-6">
         {days.map(([date, list]) => (
           <section key={date}>
-            <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+            <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
               <Pic src={img.calendar} className="h-5 w-5" />
               {formatDate(`${date}T00:00:00.000Z`)}
-              <span className="text-xs font-normal text-slate-400 dark:text-slate-500">
+              <span className="text-xs font-normal text-stone-400 dark:text-stone-500">
                 {list.length} {list.length === 1 ? 'patient' : 'patients'}
               </span>
             </h2>
@@ -119,12 +119,12 @@ export default function DoctorSchedulePage() {
                     src={userAvatar(a.patient.id ?? a.patient.fullName, 'PATIENT')}
                     alt=""
                     fit="cover"
-                    className="h-10 w-10 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800"
+                    className="h-10 w-10 shrink-0 rounded-full bg-stone-100 dark:bg-stone-800"
                   />
 
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">{a.patient.fullName}</p>
-                    <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-stone-500 dark:text-stone-400">
                       <span className="flex items-center gap-1">
                         <Pic src={serviceIcon(a.service.name)} className="h-4.5 w-4.5" />
                         {a.service.name} - {a.service.durationMinutes} min
@@ -135,7 +135,7 @@ export default function DoctorSchedulePage() {
                       </span>
                     </p>
                     {a.notes && (
-                      <p className="mt-1 flex items-start gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                      <p className="mt-1 flex items-start gap-1.5 text-xs text-stone-500 dark:text-stone-400">
                         <Pic src={img.information} className="mt-0.5 h-4 w-4" />
                         {a.notes}
                       </p>

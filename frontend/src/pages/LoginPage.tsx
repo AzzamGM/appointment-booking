@@ -41,7 +41,7 @@ export default function LoginPage() {
         <Pic src={img.user} className="h-9 w-9" />
         Welcome back
       </h1>
-      <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+      <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">
         Log in to book and manage your visits.
       </p>
       <form onSubmit={onSubmit} className={`${card} rise space-y-4 p-5`}>
@@ -74,7 +74,7 @@ export default function LoginPage() {
               title={showPassword ? 'Hide password' : 'Show password'}
               className="absolute inset-y-0 right-2 my-auto flex h-9 w-9 items-center justify-center rounded transition-opacity hover:opacity-70"
             >
-              <Pic src={showPassword ? img.hide : img.unhide} className="h-6 w-6" />
+              <Pic src={showPassword ? img.hide : img.unhide} className="no-tilt h-6 w-6" />
             </button>
           </div>
         </label>
@@ -86,7 +86,7 @@ export default function LoginPage() {
           {busy && <Pic src={img.hourglass} className="hourglass h-5 w-5" />}
           {busy ? 'Logging in...' : 'Log in'}
         </button>
-        <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-center text-sm text-stone-500 dark:text-stone-400">
           New patient?{' '}
           <Link
             to="/signup"
@@ -95,13 +95,22 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
-        <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-400 dark:bg-slate-950 dark:text-slate-500">
+        <div className="rounded-lg bg-stone-50 p-3 text-xs text-stone-400 dark:bg-stone-950 dark:text-stone-500">
           <p className="mb-1.5 text-center">Seeded logins (password123):</p>
           <ul className="flex flex-col gap-1">
             {SEEDED_LOGINS.map((s) => (
-              <li key={s.email} className="flex items-center justify-between gap-3">
-                <span className="font-mono">{s.email}</span>
-                <span className="shrink-0 uppercase tracking-wide">{s.role}</span>
+              <li key={s.email}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail(s.email);
+                    setPassword('password123');
+                  }}
+                  className="flex w-full items-center justify-between gap-3 rounded px-1.5 py-1 transition-colors hover:bg-stone-100 dark:hover:bg-stone-800"
+                >
+                  <span className="font-mono">{s.email}</span>
+                  <span className="shrink-0 uppercase tracking-wide">{s.role}</span>
+                </button>
               </li>
             ))}
           </ul>

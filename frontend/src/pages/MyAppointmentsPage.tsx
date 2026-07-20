@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useSettings } from '../lib/settings';
 import { useToast } from '../lib/toast';
 import { specialtyLabel, statusStyle } from '../lib/labels';
-import { formatDate, formatMoney, formatTime } from '../lib/format';
+import { formatDate, formatTime } from '../lib/format';
 import { img, serviceIcon, statusIcon } from '../lib/images';
 import Pic from '../components/Pic';
 import Loading from '../components/Loading';
@@ -17,10 +17,10 @@ function AppointmentSkeleton() {
   return (
     <div className={`${card} space-y-3 p-4`}>
       <div className="flex items-center gap-3">
-        <div className="h-6 w-24 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
-        <div className="h-5 w-20 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+        <div className="h-6 w-24 animate-pulse rounded bg-stone-200 dark:bg-stone-800" />
+        <div className="h-5 w-20 animate-pulse rounded bg-stone-200 dark:bg-stone-800" />
       </div>
-      <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+      <div className="h-4 w-3/4 animate-pulse rounded bg-stone-200 dark:bg-stone-800" />
     </div>
   );
 }
@@ -42,7 +42,7 @@ function VisitRating({ appointmentId }: { appointmentId: string }) {
 
   if (rating) {
     return (
-      <span className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
+      <span className="flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500">
         <Pic src={rating === 'up' ? img.thumbsUp : img.thumbDown} className="h-6 w-6" />
         You rated this visit
       </span>
@@ -50,16 +50,22 @@ function VisitRating({ appointmentId }: { appointmentId: string }) {
   }
   return (
     <span className="flex items-center gap-1.5">
-      <span className="text-xs text-slate-400 dark:text-slate-500">How was your visit?</span>
+      <span className="text-xs text-stone-400 dark:text-stone-500">How was your visit?</span>
       <button
-        onClick={() => rate('up')}
+        onClick={(e) => {
+          e.stopPropagation();
+          rate('up');
+        }}
         title="Good visit"
         className="rounded-lg p-1.5 transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
       >
         <Pic src={img.thumbsUp} alt="Thumbs up" className="h-6 w-6" />
       </button>
       <button
-        onClick={() => rate('down')}
+        onClick={(e) => {
+          e.stopPropagation();
+          rate('down');
+        }}
         title="Not great"
         className="rounded-lg p-1.5 transition-colors hover:bg-rose-50 dark:hover:bg-rose-500/10"
       >
@@ -71,21 +77,10 @@ function VisitRating({ appointmentId }: { appointmentId: string }) {
 
 export default function MyAppointmentsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toast = useToast();
   const { notifications } = useSettings();
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  const copyReference = async (reference: string, id: string) => {
-    try {
-      await navigator.clipboard.writeText(reference);
-      setCopiedId(id);
-      toast.success(`Reference ${reference} copied to your clipboard.`);
-      window.setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 2000);
-    } catch {
-      toast.error('Your browser blocked clipboard access.');
-    }
-  };
 
   const appointments = useQuery({
     queryKey: ['my-appointments'],
@@ -106,7 +101,7 @@ export default function MyAppointmentsPage() {
 
   if (!user) {
     return (
-      <p className="text-sm text-slate-600 dark:text-slate-300">
+      <p className="text-sm text-stone-600 dark:text-stone-300">
         Please{' '}
         <Link
           to="/login"
@@ -144,7 +139,6 @@ export default function MyAppointmentsPage() {
 
       <div className="space-y-3">
         {appointments.data?.appointments.map((a, i) => {
-          const copied = copiedId === a.id;
           const canCancel = a.status === 'REQUESTED' || a.status === 'CONFIRMED';
           const canRate = a.status === 'COMPLETED';
           const actions =
@@ -153,7 +147,10 @@ export default function MyAppointmentsPage() {
                 {canRate && <VisitRating appointmentId={a.id} />}
                 {canCancel && (
                   <button
-                    onClick={() => cancel.mutate(a.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      cancel.mutate(a.id);
+                    }}
                     disabled={cancel.isPending}
                     className={`flex items-center gap-1.5 ${btnDanger}`}
                   >
@@ -176,26 +173,27 @@ export default function MyAppointmentsPage() {
           return (
           <div
             key={a.id}
-            className={`${card} rise p-4 hover:shadow-md`}
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate(`/appointments/${a.id}`)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                navigate(`/appointments/${a.id}`);
+              }
+            }}
+            className={`${card} group rise relative cursor-pointer overflow-hidden p-4 hover:border-teal-300/70 hover:shadow-md dark:hover:border-teal-700/50`}
             style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
           >
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/50 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100 dark:bg-stone-900/60">
+              <span className="text-xl font-bold text-stone-800 dark:text-stone-100">
+                View summary
+              </span>
+            </div>
+
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => copyReference(a.reference, a.id)}
-                  title={copied ? 'Copied' : 'Copy reference'}
-                  aria-label={`Copy reference ${a.reference}`}
-                  className="flex items-center gap-1.5 rounded-lg px-1.5 py-1 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
-                >
-                  <span
-                    className={`font-mono text-lg font-bold leading-none tracking-widest transition-colors ${
-                      copied ? 'text-teal-600 dark:text-teal-400' : ''
-                    }`}
-                  >
-                    {copied ? 'Copied' : a.reference}
-                  </span>
-                  <Pic src={copied ? img.approved : img.copy} className="no-tilt h-6 w-6" />
-                </button>
+                <span className="text-lg font-bold leading-none">{a.doctor.name}</span>
                 <span
                   className={`flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${statusStyle[a.status]}`}
                 >
@@ -203,33 +201,39 @@ export default function MyAppointmentsPage() {
                   {a.status.replace('_', ' ')}
                 </span>
               </div>
-              {actions && <div className="hidden sm:block">{actions}</div>}
+              {actions && (
+                <div className="hidden sm:block" onClick={(e) => e.stopPropagation()}>
+                  {actions}
+                </div>
+              )}
+              <span className="flex items-center gap-1 text-xs font-semibold text-teal-700 dark:text-teal-300 sm:hidden">
+                View details
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </span>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-100 pt-3 text-sm dark:border-slate-800">
+            <div className="mt-3 flex flex-col gap-1.5 border-t border-stone-100 pt-3 text-sm dark:border-stone-800 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
               <span className="flex items-center gap-1.5 font-medium">
                 <Pic src={serviceIcon(a.service.name)} className="h-6 w-6" />
                 {a.service.name}
               </span>
-              <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                <Pic src={img.cashNote} className="h-4.5 w-4.5" />
-                {formatMoney(a.service.price)}
+              <span className="text-stone-500 dark:text-stone-400">
+                {specialtyLabel(a.doctor.specialty)}
               </span>
-              <span className="text-slate-500 dark:text-slate-400">
-                {a.doctor.name} - {specialtyLabel(a.doctor.specialty)}
-              </span>
-              <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+              <span className="flex items-center gap-1.5 text-stone-500 dark:text-stone-400">
                 <Pic src={img.clock} className="h-4.5 w-4.5" />
                 {formatDate(a.startAt)} - {formatTime(a.startAt)} to {formatTime(a.endAt)} UTC
               </span>
-              <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+              <span className="flex items-center gap-1 text-stone-500 dark:text-stone-400">
                 <Pic src={img.locationPin} className="h-4.5 w-4.5" />
                 {a.clinic.name}, {a.clinic.city}
               </span>
             </div>
 
             {notifications && a.status === 'CONFIRMED' && new Date(a.startAt) > new Date() && (
-              <p className="mt-2.5 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+              <p className="mt-2.5 flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
                 <Pic src={img.mobileNotification} className="h-5 w-5" />
                 We'll send a reminder to your phone the day before this visit.
               </p>
@@ -248,7 +252,7 @@ export default function MyAppointmentsPage() {
                       <span className="font-medium">{p.medication}</span> — {p.dosage},{' '}
                       {p.frequency}
                       {p.instructions ? `. ${p.instructions}` : ''}
-                      <span className="ml-1 text-xs text-slate-400 dark:text-slate-500">
+                      <span className="ml-1 text-xs text-stone-400 dark:text-stone-500">
                         ({p.prescribedBy})
                       </span>
                     </span>
@@ -258,7 +262,10 @@ export default function MyAppointmentsPage() {
             )}
 
             {actions && (
-              <div className="mt-3 border-t border-slate-100 pt-3 sm:hidden dark:border-slate-800">
+              <div
+                className="mt-3 border-t border-stone-100 pt-3 sm:hidden dark:border-stone-800"
+                onClick={(e) => e.stopPropagation()}
+              >
                 {actions}
               </div>
             )}

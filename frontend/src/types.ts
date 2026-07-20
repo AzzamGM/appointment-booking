@@ -20,6 +20,7 @@ export interface PublicUser {
   email: string;
   fullName: string;
   role: Role;
+  phone: string | null;
 }
 
 export interface AuthResponse {

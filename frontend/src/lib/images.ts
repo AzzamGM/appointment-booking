@@ -32,6 +32,7 @@ import lungs from '../assets/lungs.svg';
 import maleDoctor from '../assets/male_doctor.svg';
 import maleNurse from '../assets/male-nurse.svg';
 import maleUser from '../assets/male_user.svg';
+import mapLocation from '../assets/map-location.svg';
 import medicine from '../assets/medicine_png.svg';
 import menu from '../assets/menu.svg';
 import mobileNotification from '../assets/mobile-notification.svg';
@@ -46,6 +47,7 @@ import phoneCall from '../assets/phone-call.svg';
 import physicalCheck from '../assets/physical_check.svg';
 import pills from '../assets/pills.svg';
 import questionMark from '../assets/question-mark.svg';
+import requested from '../assets/requested.svg';
 import save from '../assets/save.svg';
 import search from '../assets/search.svg';
 import settings from '../assets/settings.svg';
@@ -58,6 +60,7 @@ import unapproved from '../assets/unapproved.svg';
 import unhealthy from '../assets/unhealthy.svg';
 import unhide from '../assets/unhide.svg';
 import user from '../assets/user.svg';
+import userInfo from '../assets/user_info.svg';
 import virus from '../assets/virus.svg';
 import weighingScale from '../assets/weighing-scale.svg';
 import xray from '../assets/x-ray.svg';
@@ -95,6 +98,7 @@ export const img = {
   maleDoctor,
   maleNurse,
   maleUser,
+  mapLocation,
   medicine,
   menu,
   mobileNotification,
@@ -109,6 +113,7 @@ export const img = {
   physicalCheck,
   pills,
   questionMark,
+  requested,
   save,
   search,
   settings,
@@ -121,13 +126,14 @@ export const img = {
   unhealthy,
   unhide,
   user,
+  userInfo,
   virus,
   weighingScale,
   xray,
 } as const;
 
 export const statusIcon: Record<AppointmentStatus, string> = {
-  REQUESTED: newIcon,
+  REQUESTED: requested,
   CONFIRMED: confirmed,
   CHECKED_IN: idCard,
   COMPLETED: approved,
@@ -164,12 +170,12 @@ export function doctorAvatar(name: string): string {
 }
 
 
-export type AvatarChoice = 'male' | 'female';
+export type Gender = 'male' | 'female';
 
-const avatarKey = (email: string) => `medibook:avatar:${email.toLowerCase()}`;
+const genderKey = (email: string) => `medibook:avatar:${email.toLowerCase()}`;
 
-export function saveAvatarChoice(email: string, choice: AvatarChoice): void {
-  localStorage.setItem(avatarKey(email), choice);
+export function saveGender(email: string, gender: Gender): void {
+  localStorage.setItem(genderKey(email), gender);
 }
 
 function emailHash(email: string): number {
@@ -183,7 +189,7 @@ export function userAvatar(email: string, role: string): string {
   if (role === 'DOCTOR') return doctorAvatar('');
   if (role !== 'PATIENT') return user;
 
-  const stored = localStorage.getItem(avatarKey(email));
+  const stored = localStorage.getItem(genderKey(email));
   if (stored === 'female') return femaleUser;
   if (stored === 'male') return maleUser;
   return emailHash(email) % 2 === 0 ? maleUser : femaleUser;

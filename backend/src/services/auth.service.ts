@@ -13,10 +13,16 @@ export function toPublicUser(user: User) {
     email: user.email,
     fullName: user.fullName,
     role: user.role,
+    phone: user.phone,
   };
 }
 
-export async function signup(input: { email: string; password: string; fullName: string }) {
+export async function signup(input: {
+  email: string;
+  password: string;
+  fullName: string;
+  phone?: string;
+}) {
   const email = input.email.toLowerCase().trim();
 
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -26,7 +32,13 @@ export async function signup(input: { email: string; password: string; fullName:
 
   const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
   const user = await prisma.user.create({
-    data: { email, passwordHash, fullName: input.fullName.trim(), role: 'PATIENT' },
+    data: {
+      email,
+      passwordHash,
+      fullName: input.fullName.trim(),
+      role: 'PATIENT',
+      phone: input.phone?.trim() || undefined,
+    },
   });
 
   void recordAudit(user.id, 'auth.signup', user.email);

@@ -66,10 +66,10 @@ async function main() {
     data: { email: 'patient@medibook.test', passwordHash, fullName: 'Aisha Al-Zahrani', role: 'PATIENT', phone: '+966 50 555 0111' },
   });
   const staff = await prisma.user.create({
-    data: { email: 'staff@medibook.test', passwordHash, fullName: 'Omar Al-Amri', role: 'STAFF' },
+    data: { email: 'staff@medibook.test', passwordHash, fullName: 'Omar Al-Amri', role: 'STAFF', phone: '+966 50 555 0122' },
   });
   const doctorUser = await prisma.user.create({
-    data: { email: 'doctor@medibook.test', passwordHash, fullName: 'Dr. Abdullah Al-Qahtani', role: 'DOCTOR' },
+    data: { email: 'doctor@medibook.test', passwordHash, fullName: 'Dr. Abdullah Al-Qahtani', role: 'DOCTOR', phone: '+966 50 555 0133' },
   });
 
   console.log('Seeding doctors...');

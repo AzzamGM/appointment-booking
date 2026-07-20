@@ -49,12 +49,12 @@ function HealthTips() {
 function DoctorSkeleton() {
   return (
     <div className={`${card} flex items-center gap-4 p-4`}>
-      <div className="h-16 w-16 animate-pulse rounded-full bg-slate-200 dark:bg-slate-800" />
+      <div className="h-16 w-16 animate-pulse rounded-full bg-stone-200 dark:bg-stone-800" />
       <div className="flex-1 space-y-2">
-        <div className="h-5 w-58 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
-        <div className="h-3 w-72 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+        <div className="h-5 w-58 animate-pulse rounded bg-stone-200 dark:bg-stone-800" />
+        <div className="h-3 w-72 animate-pulse rounded bg-stone-200 dark:bg-stone-800" />
       </div>
-      <div className="h-9 w-36 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800" />
+      <div className="h-9 w-36 animate-pulse rounded-lg bg-stone-200 dark:bg-stone-800" />
     </div>
   );
 }
@@ -100,7 +100,7 @@ export default function DoctorsPage() {
       <HealthTips />
 
       <div className={`${card} relative z-20 mt-4 p-4 sm:p-5`}>
-        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
           <Pic src={img.filter} className="h-6 w-6" />
           Filter doctors
         </div>
@@ -165,7 +165,7 @@ export default function DoctorsPage() {
         )}
 
         {doctors.data && doctors.data.doctors.length > 0 && (
-          <p className="text-xs text-slate-400 dark:text-slate-500">
+          <p className="text-xs text-stone-400 dark:text-stone-500">
             {doctors.data.doctors.length}{' '}
             {doctors.data.doctors.length === 1 ? 'doctor' : 'doctors'}
             {hasFilters ? ' match your filters' : ' available'}
@@ -205,7 +205,7 @@ export default function DoctorsPage() {
                 </span>
               </div>
               {d.bio && <p className={`mt-0.5 ${mutedText}`}>{d.bio}</p>}
-              <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-400 dark:text-slate-500">
+              <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-stone-400 dark:text-stone-500">
                 {d.clinics.map((c) => (
                   <span key={c.code} className="flex items-center gap-1">
                     <Pic src={img.locationPin} className="h-4 w-4" />

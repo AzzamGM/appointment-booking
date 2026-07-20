@@ -58,7 +58,7 @@ export default function PrescribeForm({
   const canSave = draft.medication.trim() && draft.dosage.trim() && draft.frequency.trim();
 
   return (
-    <div className="rise mt-3 w-full space-y-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
+    <div className="rise mt-3 w-full space-y-3 rounded-xl bg-stone-50 p-3 dark:bg-stone-950">
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="block">
           <span className={label}>Medication</span>

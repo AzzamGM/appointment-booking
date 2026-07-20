@@ -10,13 +10,13 @@ export default function Splash({
       role="status"
       aria-live="polite"
       aria-label={label}
-      className={`fixed inset-0 z-100 flex flex-col items-center justify-center gap-5 bg-slate-50 dark:bg-slate-950 ${
+      className={`fixed inset-0 z-100 flex flex-col items-center justify-center gap-5 bg-stone-50 dark:bg-stone-950 ${
         leaving ? 'splash-leaving' : ''
       }`}
     >
       <div className="aurora" aria-hidden="true" />
 
-      <div className="splash-mark flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-xl shadow-teal-600/30">
+      <div className="splash-mark flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-xl shadow-teal-600/30">
         <svg
           width="38"
           height="38"
@@ -32,7 +32,7 @@ export default function Splash({
         </svg>
       </div>
 
-      <span className="font-display bg-gradient-to-r from-teal-600 to-cyan-500 bg-clip-text text-3xl font-bold tracking-tight text-transparent dark:from-teal-300 dark:to-cyan-400">
+      <span className="font-display bg-gradient-to-r from-teal-600 to-emerald-500 bg-clip-text text-3xl font-bold tracking-tight text-transparent dark:from-teal-300 dark:to-emerald-400">
         MediBook
       </span>
 

@@ -1,34 +1,49 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { ApiError } from '../lib/api';
 import { useToast } from '../lib/toast';
-import { img, saveAvatarChoice, type AvatarChoice } from '../lib/images';
+import { saveGender, img, type Gender } from '../lib/images';
+import { DIAL_CODE } from '../components/GuestDetails';
 import Pic from '../components/Pic';
+import Select from '../components/Select';
 import { btnPrimary, card, input, label } from '../lib/ui';
 
-const AVATARS: Array<{ value: AvatarChoice; src: string }> = [
-  { value: 'female', src: img.femaleUser },
-  { value: 'male', src: img.maleUser },
+const GENDER_OPTIONS: Array<{ value: Gender; label: string }> = [
+  { value: 'female', label: 'Female' },
+  { value: 'male', label: 'Male' },
 ];
+
+interface SignupPrefill {
+  fullName?: string;
+  email?: string;
+  phone?: string;
+}
 
 export default function SignupPage() {
   const { signup } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+  const prefill = (location.state as SignupPrefill | null) ?? null;
+  const [fullName, setFullName] = useState(prefill?.fullName ?? '');
+  const [email, setEmail] = useState(prefill?.email ?? '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [avatar, setAvatar] = useState<AvatarChoice | null>(null);
+  const [phone, setPhone] = useState(prefill?.phone ?? '');
+  const [gender, setGender] = useState<Gender | null>(null);
   const [busy, setBusy] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!gender) {
+      toast.error('Please select your gender.');
+      return;
+    }
     setBusy(true);
     try {
-      await signup(email, password, fullName);
-      if (avatar) saveAvatarChoice(email, avatar);
+      await signup(email, password, fullName, phone ? `${DIAL_CODE}${phone}` : undefined);
+      saveGender(email, gender);
       toast.success('Account created. Welcome to MediBook.');
       navigate('/');
     } catch (err) {
@@ -44,7 +59,7 @@ export default function SignupPage() {
         <Pic src={img.addUser} className="h-9 w-9" />
         Create your account
       </h1>
-      <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+      <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">
         Sign up as a new patient to start booking.
       </p>
       <form onSubmit={onSubmit} className={`${card} rise space-y-4 p-5`}>
@@ -55,6 +70,7 @@ export default function SignupPage() {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             autoComplete="name"
+            placeholder="Sara Al-Harbi"
             required
           />
         </label>
@@ -66,8 +82,26 @@ export default function SignupPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
+            placeholder="name@example.com"
             required
           />
+        </label>
+        <label className="block">
+          <span className={label}>Mobile number (optional)</span>
+          <div className="flex">
+            <span className="flex shrink-0 items-center rounded-l-xl border border-r-0 border-stone-200 bg-stone-100 px-3 font-mono text-base font-medium tracking-wide text-stone-600 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300">
+              {DIAL_CODE}
+            </span>
+            <input
+              className={`${input} rounded-l-none font-mono text-base tracking-widest tabular-nums`}
+              type="tel"
+              inputMode="numeric"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
+              autoComplete="tel-national"
+              placeholder="55 123 4567"
+            />
+          </div>
         </label>
         <label className="block">
           <span className={label}>Password (min 8 chars)</span>
@@ -79,6 +113,7 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
+              placeholder="At least 8 characters"
               required
             />
             <button
@@ -88,29 +123,18 @@ export default function SignupPage() {
               title={showPassword ? 'Hide password' : 'Show password'}
               className="absolute inset-y-0 right-2 my-auto flex h-9 w-9 items-center justify-center rounded transition-opacity hover:opacity-70"
             >
-              <Pic src={showPassword ? img.hide : img.unhide} className="h-6 w-6" />
+              <Pic src={showPassword ? img.hide : img.unhide} className="no-tilt h-6 w-6" />
             </button>
           </div>
         </label>
         <div>
-          <span className={label}>Pick an avatar (optional)</span>
-          <div className="flex gap-2">
-            {AVATARS.map((a) => (
-              <button
-                key={a.value}
-                type="button"
-                onClick={() => setAvatar((v) => (v === a.value ? null : a.value))}
-                aria-pressed={avatar === a.value}
-                className={`rounded-xl border p-2 transition-all active:scale-95 ${
-                  avatar === a.value
-                    ? 'border-teal-500 bg-teal-50 ring-2 ring-teal-500/25 dark:border-teal-500 dark:bg-teal-500/10'
-                    : 'border-slate-200 bg-slate-50 hover:border-teal-300 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-teal-700'
-                }`}
-              >
-                <Pic src={a.src} className="h-12 w-12" />
-              </button>
-            ))}
-          </div>
+          <span className={label}>Gender</span>
+          <Select
+            value={gender ?? ''}
+            onChange={(v) => setGender(v ? (v as Gender) : null)}
+            placeholder="Select gender"
+            options={GENDER_OPTIONS}
+          />
         </div>
         <button
           type="submit"
@@ -120,7 +144,7 @@ export default function SignupPage() {
           {busy && <Pic src={img.hourglass} className="hourglass h-5 w-5" />}
           {busy ? 'Creating account...' : 'Sign up'}
         </button>
-        <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+        <p className="text-center text-sm text-stone-500 dark:text-stone-400">
           Already registered?{' '}
           <Link
             to="/login"

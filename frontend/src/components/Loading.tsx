@@ -24,7 +24,7 @@ export default function Loading({
   if (inline) {
     return (
       <div
-        className="fade-in flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400"
+        className="fade-in flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400"
         role="status"
       >
         <Pic src={img.hourglass} className="hourglass h-5 w-5" />
@@ -35,7 +35,7 @@ export default function Loading({
 
   return (
     <div
-      className="fade-in flex flex-col items-center justify-center gap-2 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
+      className="fade-in flex flex-col items-center justify-center gap-2 py-10 text-center text-sm text-stone-500 dark:text-stone-400"
       role="status"
     >
       <Pic src={img.hourglass} className="hourglass h-10 w-10" />

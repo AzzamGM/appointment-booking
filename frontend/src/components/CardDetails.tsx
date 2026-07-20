@@ -134,7 +134,7 @@ export default function CardDetails({ value, onChange }: CardDetailsProps) {
         </label>
       </div>
 
-      <p className="flex items-start gap-1.5 text-xs text-slate-400 dark:text-slate-500">
+      <p className="flex items-start gap-1.5 text-xs text-stone-400 dark:text-stone-500">
         <Pic src={img.information} className="mt-px h-4.5 w-4.5" />
         Demo only. No card is charged and nothing you type here is sent or stored.
       </p>

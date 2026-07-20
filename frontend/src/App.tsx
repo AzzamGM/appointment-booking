@@ -1,23 +1,25 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, Route, Routes } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from './lib/api';
 import { useAuth } from './lib/auth';
 import { useTheme } from './lib/theme';
 import { useSettings } from './lib/settings';
 import { img, userAvatar } from './lib/images';
+import { useBookingNotifications } from './lib/notifications';
 import Pic from './components/Pic';
 import Switch from './components/Switch';
 import Splash from './components/Splash';
+import Notifications from './components/Notifications';
 import BookingPage from './pages/BookingPage';
 import DoctorSchedulePage from './pages/DoctorSchedulePage';
 import DoctorsPage from './pages/DoctorsPage';
 import BookDoctorPage from './pages/BookDoctorPage';
 import MyAppointmentsPage from './pages/MyAppointmentsPage';
+import AppointmentDetailPage from './pages/AppointmentDetailPage';
 import StaffPage from './pages/StaffPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
-import type { Appointment } from './types';
 
 const SPLASH_MIN_MS = 1000;
 const SPLASH_MAX_MS = 6000;
@@ -31,49 +33,6 @@ const preloadImage = (src: string) =>
     image.onload = image.onerror = () => resolve();
     image.src = src;
   });
-
-function NotificationBell() {
-  const { user } = useAuth();
-  const { notifications } = useSettings();
-  const navigate = useNavigate();
-  const isStaff = user?.role === 'STAFF';
-
-  const appts = useQuery({
-    queryKey: isStaff ? ['staff-appointments'] : ['my-appointments'],
-    enabled: !!user && user.role !== 'DOCTOR',
-    refetchInterval: 30_000,
-    queryFn: () =>
-      api<{ appointments: Appointment[] }>(isStaff ? '/appointments' : '/patients/me/appointments'),
-  });
-
-  const count = useMemo(() => {
-    const list = appts.data?.appointments ?? [];
-    return isStaff
-      ? list.filter((a) => a.status === 'REQUESTED').length
-      : list.filter((a) => a.status === 'CONFIRMED' && new Date(a.startAt) > new Date()).length;
-  }, [appts.data, isStaff]);
-
-  if (!user || user.role === 'DOCTOR' || !notifications) return null;
-
-  return (
-    <button
-      onClick={() => navigate(isStaff ? '/staff' : '/appointments')}
-      title={
-        isStaff
-          ? `${count} booking request${count === 1 ? '' : 's'} awaiting review`
-          : `${count} upcoming confirmed visit${count === 1 ? '' : 's'}`
-      }
-      className="relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
-    >
-      <Pic src={img.notificationBell} alt="Notifications" className="h-6 w-6" />
-      {count > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
-          {count}
-        </span>
-      )}
-    </button>
-  );
-}
 
 function ProfileMenu({
   onNavigate,
@@ -117,7 +76,7 @@ function ProfileMenu({
         aria-expanded={open}
         title={user ? 'Account settings' : 'Settings'}
         aria-label={user ? 'Account settings' : 'Settings'}
-        className={`group flex items-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 ${
+        className={`group flex items-center rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 ${
           iconOnly ? 'h-9 w-9 justify-center' : 'w-full gap-2 px-1.5 py-1'
         }`}
       >
@@ -127,11 +86,11 @@ function ProfileMenu({
               src={userAvatar(user.email, user.role)}
               alt=""
               fit="cover"
-              className="no-tilt h-6 w-6 rounded-full bg-slate-100 ring-1 ring-slate-200 transition-colors group-hover:ring-teal-400 dark:bg-slate-800 dark:ring-slate-700 dark:group-hover:ring-teal-400"
+              className="no-tilt h-6 w-6 rounded-full bg-stone-100 ring-1 ring-stone-200 transition-colors group-hover:ring-teal-400 dark:bg-stone-800 dark:ring-stone-700 dark:group-hover:ring-teal-400"
             />
             {!compact && (
               <>
-                <span className="text-sm text-slate-600 transition-colors group-hover:text-slate-900 dark:text-slate-300 dark:group-hover:text-white">
+                <span className="text-sm text-stone-600 transition-colors group-hover:text-stone-900 dark:text-stone-300 dark:group-hover:text-white">
                   {user.fullName}
                 </span>
                 <Pic src={img.settings} className="h-6 w-6 opacity-70" />
@@ -146,19 +105,19 @@ function ProfileMenu({
       {open && (
         <div
           role="menu"
-          className="drop absolute right-0 z-30 mt-2 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900"
+          className="drop absolute right-0 z-30 mt-2 w-72 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-900"
         >
           {user && (
-            <div className="flex items-center gap-3 border-b border-slate-100 p-3 dark:border-slate-800">
+            <div className="flex items-center gap-3 border-b border-stone-100 p-3 dark:border-stone-800">
               <Pic
                 src={userAvatar(user.email, user.role)}
                 alt=""
                 fit="cover"
-                className="h-11 w-11 rounded-full bg-slate-100 dark:bg-slate-800"
+                className="h-11 w-11 rounded-full bg-stone-100 dark:bg-stone-800"
               />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{user.fullName}</p>
-                <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
+                <p className="truncate text-xs text-stone-500 dark:text-stone-400">{user.email}</p>
                 <span className="mt-1 inline-block rounded bg-teal-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
                   {user.role.toLowerCase()}
                 </span>
@@ -167,7 +126,7 @@ function ProfileMenu({
           )}
 
           <div className="p-1.5">
-            <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               Settings
             </p>
 
@@ -194,7 +153,7 @@ function ProfileMenu({
           </div>
 
           {user && (
-            <div className="border-t border-slate-100 p-1.5 dark:border-slate-800">
+            <div className="border-t border-stone-100 p-1.5 dark:border-stone-800">
               <button
                 onClick={() => {
                   setOpen(false);
@@ -222,6 +181,7 @@ export default function App() {
   const [leaving, setLeaving] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const queryClient = useQueryClient();
+  const notif = useBookingNotifications();
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -285,10 +245,16 @@ export default function App() {
     `flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
       isActive
         ? 'bg-teal-100 text-teal-800 dark:bg-teal-500/15 dark:text-teal-300'
-        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
+        : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-100'
     }`;
 
   const closeMenu = () => setMenuOpen(false);
+
+  const navBadge = notif.count > 0 && (
+    <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+      {notif.count}
+    </span>
+  );
 
   const navLinks = (
     <>
@@ -304,22 +270,24 @@ export default function App() {
           My schedule
         </NavLink>
       )}
-      <NavLink to="/doctors" className={navLink} end onClick={closeMenu}>
-        <Pic src={img.search} className="h-6 w-6" />
-        Find a doctor
-      </NavLink>
       {user?.role === 'PATIENT' && (
         <NavLink to="/appointments" className={navLink} onClick={closeMenu}>
           <Pic src={img.calendar} className="h-6 w-6" />
           My appointments
+          {navBadge}
         </NavLink>
       )}
       {user?.role === 'STAFF' && (
         <NavLink to="/staff" className={navLink} onClick={closeMenu}>
           <Pic src={img.customerServiceAgent} className="h-6 w-6" />
           Front desk
+          {navBadge}
         </NavLink>
       )}
+      <NavLink to="/doctors" className={navLink} end onClick={closeMenu}>
+        <Pic src={img.search} className="h-6 w-6" />
+        Find a doctor
+      </NavLink>
       {!user && (
         <NavLink to="/login" className={navLink} onClick={closeMenu}>
           <Pic src={img.login} className="no-tilt h-6 w-6" />
@@ -331,24 +299,24 @@ export default function App() {
 
   const logo = (
     <Link to="/" className="group flex items-center gap-2" onClick={closeMenu}>
-      <span className="hidden h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-md shadow-teal-600/30 transition-transform group-hover:scale-105 sm:flex">
+      <span className="hidden h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-md shadow-teal-600/30 transition-transform group-hover:scale-105 sm:flex">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
           <path className="ekg-trace" d="M2 12h4l3-8 4 16 3-8h6" />
         </svg>
       </span>
-      <span className="font-display bg-gradient-to-r from-teal-600 to-cyan-500 bg-clip-text text-lg font-bold tracking-tight text-transparent dark:from-teal-300 dark:to-cyan-400">
+      <span className="font-display bg-gradient-to-r from-teal-600 to-emerald-500 bg-clip-text text-lg font-bold tracking-tight text-transparent dark:from-teal-300 dark:to-emerald-400">
         MediBook
       </span>
     </Link>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 antialiased transition-colors dark:bg-slate-950 dark:text-slate-100">
+    <div className="min-h-screen bg-stone-100 text-stone-900 antialiased transition-colors dark:bg-stone-950 dark:text-stone-100">
       {booting && <Splash label="Loading MediBook" leaving={leaving} />}
       <div className="aurora" aria-hidden="true" />
       <header
         ref={headerRef}
-        className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 backdrop-blur dark:border-slate-800 dark:bg-slate-950/85"
+        className="sticky top-0 z-30 border-b border-stone-200/80 bg-white/75 backdrop-blur dark:border-stone-800 dark:bg-stone-950/85"
       >
         <div className="mx-auto max-w-5xl px-4 py-3">
           <div className="relative flex items-center justify-between gap-x-4 sm:justify-start">
@@ -356,7 +324,7 @@ export default function App() {
               onClick={() => setMenuOpen((v) => !v)}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
-              className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-slate-100 sm:hidden dark:hover:bg-slate-800"
+              className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-stone-100 sm:hidden dark:hover:bg-stone-800"
             >
               <Pic src={img.menu} alt="" className="no-tilt h-6 w-6" />
             </button>
@@ -366,16 +334,16 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-1.5 sm:hidden">
-              <NotificationBell />
+              <Notifications state={notif} />
               <ProfileMenu onNavigate={closeMenu} compact />
             </div>
 
             <nav className="ml-auto hidden items-center gap-1.5 sm:flex">
               {navLinks}
-              <NotificationBell />
+              <Notifications state={notif} />
               <div
                 className={
-                  user ? 'ml-1 border-l border-slate-200 pl-3 dark:border-slate-800' : undefined
+                  user ? 'ml-1 border-l border-stone-200 pl-3 dark:border-stone-800' : undefined
                 }
               >
                 <ProfileMenu onNavigate={closeMenu} />
@@ -410,6 +378,7 @@ export default function App() {
           <Route path="/doctors" element={<DoctorsPage />} />
           <Route path="/doctors/:id/book" element={<BookDoctorPage />} />
           <Route path="/appointments" element={<MyAppointmentsPage />} />
+          <Route path="/appointments/:id" element={<AppointmentDetailPage />} />
           <Route path="/staff" element={<StaffPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />

@@ -88,13 +88,13 @@ export default function Select({
         aria-expanded={open}
         onClick={() => (open ? setOpen(false) : openMenu())}
         onKeyDown={onKeyDown}
-        className="flex w-full items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-left text-sm text-slate-900 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-teal-400 dark:focus:ring-teal-400/25"
+        className="flex w-full items-center justify-between gap-2 rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-left text-sm text-stone-900 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 dark:focus:border-teal-400 dark:focus:ring-teal-400/25"
       >
-        <span className={selected ? '' : 'text-slate-400 dark:text-slate-500'}>
+        <span className={selected ? '' : 'text-stone-400 dark:text-stone-500'}>
           {selected ? selected.label : placeholder}
         </span>
         <svg
-          className={`shrink-0 text-slate-400 transition-transform duration-200 dark:text-slate-500 ${open ? 'rotate-180' : ''}`}
+          className={`shrink-0 text-stone-400 transition-transform duration-200 dark:text-stone-500 ${open ? 'rotate-180' : ''}`}
           width="16"
           height="16"
           viewBox="0 0 24 24"
@@ -110,7 +110,7 @@ export default function Select({
 
       {open && (
         <div
-          className={`drop absolute z-50 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900 ${
+          className={`drop absolute z-50 w-full overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-900 ${
             dropUp ? 'bottom-full mb-2 sm:bottom-auto sm:mb-0 sm:mt-2' : 'mt-2'
           }`}
         >
@@ -126,11 +126,11 @@ export default function Select({
                   onClick={() => choose(o.value)}
                   onMouseEnter={() => setHighlight(i)}
                   className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                    i === highlight ? 'bg-slate-100 dark:bg-slate-800' : ''
+                    i === highlight ? 'bg-stone-100 dark:bg-stone-800' : ''
                   } ${
                     isSelected
                       ? 'font-medium text-teal-700 dark:text-teal-300'
-                      : 'text-slate-700 dark:text-slate-200'
+                      : 'text-stone-700 dark:text-stone-200'
                   }`}
                 >
                   {o.label}
@@ -143,7 +143,7 @@ export default function Select({
               );
             })}
             {options.length === 0 && (
-              <p className="px-3 py-2 text-sm text-slate-400 dark:text-slate-500">No options</p>
+              <p className="px-3 py-2 text-sm text-stone-400 dark:text-stone-500">No options</p>
             )}
           </div>
         </div>

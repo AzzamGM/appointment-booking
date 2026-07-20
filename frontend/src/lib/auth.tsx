@@ -5,7 +5,7 @@ import type { AuthResponse, PublicUser } from '../types';
 interface AuthContextValue {
   user: PublicUser | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, fullName: string) => Promise<void>;
+  signup: (email: string, password: string, fullName: string, phone?: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -33,9 +33,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applyAuth(await api<AuthResponse>('/auth/login', { method: 'POST', body: { email, password } }));
   };
 
-  const signup = async (email: string, password: string, fullName: string) => {
+  const signup = async (email: string, password: string, fullName: string, phone?: string) => {
     applyAuth(
-      await api<AuthResponse>('/auth/signup', { method: 'POST', body: { email, password, fullName } }),
+      await api<AuthResponse>('/auth/signup', {
+        method: 'POST',
+        body: { email, password, fullName, phone },
+      }),
     );
   };
 

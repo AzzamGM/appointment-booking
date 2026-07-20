@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -66,21 +67,52 @@ const KIND_STYLE: Record<ToastKind, { container: string; path: ReactNode }> = {
 
 let nextId = 1;
 
+const DISMISS_MS: Record<ToastKind, number> = { success: 4500, info: 4500, error: 7000 };
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const timers = useRef(new Map<number, number>());
 
   const dismiss = useCallback((id: number) => {
+    const timer = timers.current.get(id);
+    if (timer) {
+      window.clearTimeout(timer);
+      timers.current.delete(id);
+    }
     setToasts((ts) => ts.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
     setTimeout(() => setToasts((ts) => ts.filter((t) => t.id !== id)), 200);
   }, []);
+
+  const scheduleDismiss = useCallback(
+    (id: number, kind: ToastKind) => {
+      timers.current.set(
+        id,
+        window.setTimeout(() => dismiss(id), DISMISS_MS[kind]),
+      );
+    },
+    [dismiss],
+  );
 
   const push = useCallback(
     (kind: ToastKind, message: string, action?: ToastAction) => {
       const id = nextId++;
       setToasts((ts) => [...ts, { id, kind, message, action, leaving: false }]);
-      setTimeout(() => dismiss(id), kind === 'error' ? 7000 : 4500);
+      scheduleDismiss(id, kind);
     },
-    [dismiss],
+    [scheduleDismiss],
+  );
+
+  const pause = useCallback((id: number) => {
+    const timer = timers.current.get(id);
+    if (timer) {
+      window.clearTimeout(timer);
+      timers.current.delete(id);
+    }
+  }, []);
+
+  const resume = useCallback(
+    (id: number, kind: ToastKind) => scheduleDismiss(id, kind),
+    [scheduleDismiss],
   );
 
   const api = useMemo<ToastApi>(
@@ -106,6 +138,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               key={t.id}
               role="status"
               data-leaving={t.leaving}
+              onMouseEnter={() => pause(t.id)}
+              onMouseLeave={() => resume(t.id, t.kind)}
               className={`toast drop pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl border p-3.5 text-white shadow-lg backdrop-blur ${style.container}`}
             >
               <svg
@@ -129,9 +163,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                       t.action!.onClick();
                       dismiss(t.id);
                     }}
-                    className="mt-1 block text-sm font-semibold underline underline-offset-2 hover:no-underline"
+                    className="mt-2 flex items-center gap-1.5 rounded-lg bg-white/15 px-2.5 py-1.5 text-sm font-semibold transition-colors hover:bg-white/25"
                   >
                     {t.action.label}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
                   </button>
                 )}
               </div>

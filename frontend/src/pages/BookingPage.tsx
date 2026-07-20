@@ -75,19 +75,19 @@ export default function BookingPage() {
       )}
 
       <section className="mt-6">
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
           <StepBadge n={1} /> Pick a location
           <Pic src={img.locationPin} className="h-5 w-5" />
         </h2>
 
         {selectedClinic ? (
           <div className={`${card} flex flex-wrap items-center gap-3 p-4`}>
-            <Pic src={img.locationPin} className="h-10 w-10" />
+            <Pic src={img.mapLocation} className="h-10 w-10" />
             <div className="flex-1">
               <p className="font-semibold">
                 {selectedClinic.name}, {selectedClinic.city}
               </p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">
+              <p className="text-xs text-stone-400 dark:text-stone-500">
                 {atClinic.length} {atClinic.length === 1 ? 'doctor' : 'doctors'} at this branch
               </p>
             </div>
@@ -115,13 +115,13 @@ export default function BookingPage() {
                   onClick={() => chooseClinic(c.code)}
                   className={`${card} rise flex items-center gap-3 p-4 text-left hover:-translate-y-0.5`}
                 >
-                  <Pic src={img.locationPin} className="h-12 w-12 shrink-0" />
+                  <Pic src={img.mapLocation} className="h-12 w-12 shrink-0" />
                   <span className="min-w-0">
                     <span className="block font-semibold">{c.name}</span>
-                    <span className="block text-xs text-slate-500 dark:text-slate-400">
+                    <span className="block text-xs text-stone-500 dark:text-stone-400">
                       {c.address}, {c.city}
                     </span>
-                    <span className="block text-xs text-slate-400 dark:text-slate-500">
+                    <span className="block text-xs text-stone-400 dark:text-stone-500">
                       {count} {count === 1 ? 'doctor' : 'doctors'}
                     </span>
                   </span>
@@ -134,7 +134,7 @@ export default function BookingPage() {
 
       {clinicCode && (
       <section ref={specialtyStepRef} className="rise mt-6 scroll-mt-20">
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
           <StepBadge n={2} /> Choose a specialty
         </h2>
 
@@ -143,7 +143,7 @@ export default function BookingPage() {
             <Pic src={specialtyIcon[specialty]} className="h-10 w-10" />
             <div className="flex-1">
               <p className="font-semibold">{specialtyLabel(specialty)}</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500">
+              <p className="text-xs text-stone-400 dark:text-stone-500">
                 {shortlist.length} {shortlist.length === 1 ? 'doctor' : 'doctors'} available
               </p>
             </div>
@@ -169,7 +169,7 @@ export default function BookingPage() {
                 >
                   <Pic src={specialtyIcon[s]} className="h-14 w-14" />
                   <span className="text-sm font-semibold">{specialtyLabel(s)}</span>
-                  <span className="text-xs text-slate-400 dark:text-slate-500">
+                  <span className="text-xs text-stone-400 dark:text-stone-500">
                     {empty ? 'None available' : `${count} ${count === 1 ? 'doctor' : 'doctors'}`}
                   </span>
                 </button>
@@ -182,7 +182,7 @@ export default function BookingPage() {
 
       {specialty && (
       <section ref={doctorStepRef} className="rise mt-6 scroll-mt-20">
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
           <StepBadge n={3} /> Choose a doctor
         </h2>
 
@@ -202,7 +202,7 @@ export default function BookingPage() {
               <div className="min-w-0 flex-1">
                 <p className="text-lg font-semibold">{d.name}</p>
                 {d.bio && <p className={`mt-0.5 ${mutedText}`}>{d.bio}</p>}
-                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-400 dark:text-slate-500">
+                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-stone-400 dark:text-stone-500">
                   {d.clinics.map((c) => (
                     <span key={c.code} className="flex items-center gap-1">
                       <Pic src={img.locationPin} className="h-4 w-4" />
@@ -224,7 +224,7 @@ export default function BookingPage() {
       </section>
       )}
 
-      <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
+      <p className="mt-6 text-center text-sm text-stone-500 dark:text-stone-400">
         Looking for someone specific?{' '}
         <Link
           to="/doctors"

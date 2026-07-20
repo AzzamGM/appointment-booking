@@ -7,7 +7,7 @@ const LENGTH = 4;
 const RESEND_SECONDS = 30;
 
 interface OtpDialogProps {
-  phone: string;
+  phone: string | null;
   busy?: boolean;
   onVerified: () => void;
   onCancel: () => void;
@@ -83,18 +83,24 @@ export default function OtpDialog({ phone, busy = false, onVerified, onCancel }:
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
       <div
-        className="fade-in absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
+        className="fade-in absolute inset-0 bg-stone-950/50 backdrop-blur-sm"
         onClick={() => !busy && onCancel()}
       />
 
       <div className={`${card} drop relative w-full max-w-sm p-6 text-center`}>
         <Pic src={img.otp} className="mx-auto h-14 w-14" />
         <h2 className="mt-3 font-display text-lg font-bold">Confirm your number</h2>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          We sent a {LENGTH} digit code to{' '}
-          <span className="font-mono font-semibold text-slate-700 dark:text-slate-200">
-            {phone}
-          </span>
+        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+          {phone ? (
+            <>
+              We sent a {LENGTH} digit code to{' '}
+              <span className="font-mono font-semibold text-stone-700 dark:text-stone-200">
+                {phone}
+              </span>
+            </>
+          ) : (
+            `We sent a ${LENGTH} digit code to the mobile number on your account.`
+          )}
         </p>
 
         <div className="mt-5 flex justify-center gap-2.5">
@@ -115,13 +121,13 @@ export default function OtpDialog({ phone, busy = false, onVerified, onCancel }:
               className={`h-14 w-12 rounded-xl border text-center font-mono text-xl font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500/25 disabled:opacity-50 ${
                 digit
                   ? 'border-teal-500 bg-teal-50 text-teal-700 dark:border-teal-500 dark:bg-teal-500/10 dark:text-teal-300'
-                  : 'border-slate-300 bg-white text-slate-900 focus:border-teal-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100'
+                  : 'border-stone-300 bg-white text-stone-900 focus:border-teal-500 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100'
               }`}
             />
           ))}
         </div>
 
-        <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
+        <p className="mt-3 text-xs text-stone-400 dark:text-stone-500">
           {seconds > 0 ? (
             `Didn't get it? You can resend in ${seconds}s`
           ) : (
@@ -147,7 +153,7 @@ export default function OtpDialog({ phone, busy = false, onVerified, onCancel }:
           )}
         </div>
 
-        <p className="mt-4 flex items-start gap-1.5 text-left text-xs text-slate-400 dark:text-slate-500">
+        <p className="mt-4 flex items-start gap-1.5 text-left text-xs text-stone-400 dark:text-stone-500">
           <Pic src={img.information} className="mt-px h-4.5 w-4.5 shrink-0" />
           Demo only. No message is sent and any {LENGTH} digits will be accepted.
         </p>

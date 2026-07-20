@@ -7,6 +7,7 @@ const signupSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   fullName: z.string().min(1).max(100),
+  phone: z.string().min(1).max(30).optional(),
 });
 
 const loginSchema = z.object({

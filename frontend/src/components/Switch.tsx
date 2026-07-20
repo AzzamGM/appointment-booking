@@ -15,7 +15,7 @@ export default function Switch({ checked, onChange, label }: SwitchProps) {
       className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
         checked
           ? 'bg-teal-500 dark:bg-teal-400'
-          : 'bg-slate-300 dark:bg-slate-700'
+          : 'bg-stone-300 dark:bg-stone-700'
       }`}
     >
       <span
