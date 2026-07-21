@@ -62,7 +62,7 @@ function SettingsPanel({
           {user && (
             <div className="flex items-center gap-3 border-b border-stone-100 p-3 dark:border-stone-800">
               <Pic
-                src={userAvatar(user.email, user.role)}
+                src={userAvatar(user.role, user.gender)}
                 alt=""
                 fit="cover"
                 className="h-11 w-11 rounded-full bg-stone-100 ring-2 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700"
@@ -226,7 +226,7 @@ function ProfileMenu({
       {user ? (
         <>
           <Pic
-            src={userAvatar(user.email, user.role)}
+            src={userAvatar(user.role, user.gender)}
             alt=""
             fit="cover"
             className="no-tilt h-6 w-6 rounded-full bg-stone-100 ring-1 ring-stone-200 transition-colors group-hover:ring-teal-400 dark:bg-stone-800 dark:ring-stone-700 dark:group-hover:ring-teal-400"

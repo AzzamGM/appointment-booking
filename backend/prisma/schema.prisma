@@ -13,6 +13,11 @@ enum Role {
   STAFF
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
 enum Specialty {
   GENERAL_PRACTICE
   PEDIATRICS
@@ -44,6 +49,7 @@ model User {
   fullName     String
   role         Role     @default(PATIENT)
   phone        String?
+  gender       Gender?
   createdAt    DateTime @default(now())
 
   doctorProfile Doctor?

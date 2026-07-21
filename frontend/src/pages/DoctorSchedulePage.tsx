@@ -197,7 +197,7 @@ export default function DoctorSchedulePage() {
                     key={a.id}
                     appointment={a}
                     index={i}
-                    avatar={userAvatar(a.patient.id ?? "", "PATIENT")}
+                    avatar={userAvatar("PATIENT", a.patient.gender)}
                     name={firstName(a.patient.fullName)}
                     nameTitle={a.patient.fullName}
                     subtitle={L(a.service.name, a.service.nameAr)}

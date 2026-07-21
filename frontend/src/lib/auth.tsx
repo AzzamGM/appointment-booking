@@ -1,11 +1,17 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { api, clearToken, setToken, USER_KEY } from './api';
-import type { AuthResponse, PublicUser } from '../types';
+import type { AuthResponse, Gender, PublicUser } from '../types';
 
 interface AuthContextValue {
   user: PublicUser | null;
   login: (email: string, password: string) => Promise<PublicUser>;
-  signup: (email: string, password: string, fullName: string, phone?: string) => Promise<void>;
+  signup: (
+    email: string,
+    password: string,
+    fullName: string,
+    phone?: string,
+    gender?: Gender,
+  ) => Promise<void>;
   setUserData: (user: PublicUser) => void;
   logout: () => void;
 }
@@ -39,11 +45,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res.user;
   };
 
-  const signup = async (email: string, password: string, fullName: string, phone?: string) => {
+  const signup = async (
+    email: string,
+    password: string,
+    fullName: string,
+    phone?: string,
+    gender?: Gender,
+  ) => {
     applyAuth(
       await api<AuthResponse>('/auth/signup', {
         method: 'POST',
-        body: { email, password, fullName, phone },
+        body: { email, password, fullName, phone, gender },
       }),
     );
   };

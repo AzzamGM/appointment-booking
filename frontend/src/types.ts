@@ -16,12 +16,15 @@ export type AppointmentStatus =
   | 'CANCELLED'
   | 'NO_SHOW';
 
+export type Gender = 'MALE' | 'FEMALE';
+
 export interface PublicUser {
   id: string;
   email: string;
   fullName: string;
   role: Role;
   phone: string | null;
+  gender: Gender | null;
 }
 
 export interface AuthResponse {
@@ -117,6 +120,7 @@ export interface Appointment {
   patient: {
     id: string | null;
     fullName: string;
+    gender: Gender | null;
     isGuest: boolean;
     email?: string | null;
     phone?: string | null;

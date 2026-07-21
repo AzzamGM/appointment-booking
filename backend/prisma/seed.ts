@@ -63,7 +63,7 @@ async function main() {
   console.log('Seeding users (one per role)...');
   const passwordHash = await bcrypt.hash('password123', 10);
   const patient = await prisma.user.create({
-    data: { email: 'patient@medibook.test', passwordHash, fullName: 'Aisha Al-Zahrani', role: 'PATIENT', phone: '+966 50 555 0111' },
+    data: { email: 'patient@medibook.test', passwordHash, fullName: 'Aisha Al-Zahrani', role: 'PATIENT', gender: 'FEMALE', phone: '+966 50 555 0111' },
   });
   const staff = await prisma.user.create({
     data: { email: 'staff@medibook.test', passwordHash, fullName: 'Omar Al-Amri', role: 'STAFF', phone: '+966 50 555 0122' },

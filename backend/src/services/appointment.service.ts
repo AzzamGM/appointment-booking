@@ -70,10 +70,16 @@ export function toAppointmentDto(appt: AppointmentWithDetails, viewerRole?: Requ
       requiresApproval: appt.service.requiresApproval,
     },
     patient: appt.patient
-      ? { id: appt.patient.id, fullName: appt.patient.fullName, isGuest: false }
+      ? {
+          id: appt.patient.id,
+          fullName: appt.patient.fullName,
+          gender: appt.patient.gender,
+          isGuest: false,
+        }
       : {
           id: null,
           fullName: appt.guestName ?? 'Guest',
+          gender: null,
           email: hideContact ? null : appt.guestEmail,
           phone: hideContact ? null : appt.guestPhone,
           isGuest: true,

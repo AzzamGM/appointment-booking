@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import type { User } from '@prisma/client';
+import type { Gender, User } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { signToken } from '../middleware/auth';
 import { ConflictError, UnauthorizedError } from '../middleware/errors';
@@ -14,6 +14,7 @@ export function toPublicUser(user: User) {
     fullName: user.fullName,
     role: user.role,
     phone: user.phone,
+    gender: user.gender,
   };
 }
 
@@ -22,6 +23,7 @@ export async function signup(input: {
   password: string;
   fullName: string;
   phone?: string;
+  gender?: Gender;
 }) {
   const email = input.email.toLowerCase().trim();
 
@@ -38,6 +40,7 @@ export async function signup(input: {
       fullName: input.fullName.trim(),
       role: 'PATIENT',
       phone: input.phone?.trim() || undefined,
+      gender: input.gender,
     },
   });
 

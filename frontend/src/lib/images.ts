@@ -1,4 +1,4 @@
-import type { AppointmentStatus, Specialty } from '../types';
+import type { AppointmentStatus, Gender, Specialty } from '../types';
 
 import accountSettings from '../assets/account_settings.svg';
 import addCalendar from '../assets/add-calendar.svg';
@@ -195,28 +195,11 @@ export function doctorAvatar(name: string): string {
 }
 
 
-export type Gender = 'male' | 'female';
-
-const genderKey = (email: string) => `medibook:avatar:${email.toLowerCase()}`;
-
-export function saveGender(email: string, gender: Gender): void {
-  localStorage.setItem(genderKey(email), gender);
-}
-
-function emailHash(email: string): number {
-  let h = 0;
-  for (const c of email) h = (h * 31 + c.charCodeAt(0)) | 0;
-  return Math.abs(h);
-}
-
-export function userAvatar(email: string, role: string): string {
+export function userAvatar(role: string, gender?: Gender | null): string {
   if (role === 'STAFF') return customerServiceAgent;
   if (role === 'DOCTOR') return doctorAvatar('');
   if (role !== 'PATIENT') return user;
-  if (!email.trim()) return user;
-
-  const stored = localStorage.getItem(genderKey(email));
-  if (stored === 'female') return femaleUser;
-  if (stored === 'male') return maleUser;
-  return emailHash(email) % 2 === 0 ? maleUser : femaleUser;
+  if (gender === 'FEMALE') return femaleUser;
+  if (gender === 'MALE') return maleUser;
+  return user;
 }

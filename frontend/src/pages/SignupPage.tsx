@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../lib/auth';
 import { errorMessage } from '../lib/api';
 import { useToast } from '../lib/toast';
-import { saveGender, img, type Gender } from '../lib/images';
+import { img } from '../lib/images';
+import type { Gender } from '../types';
 import { toAsciiDigits } from '../lib/format';
 import { DIAL_CODE } from '../components/GuestDetails';
 import Pic from '../components/Pic';
@@ -12,8 +13,8 @@ import Select from '../components/Select';
 import { btnPrimary, card, fieldError, input, inputWithIcon, invalidBorder, label } from '../lib/ui';
 
 const GENDER_OPTIONS: Array<{ value: Gender; label: string }> = [
-  { value: 'female', label: 'female' },
-  { value: 'male', label: 'male' },
+  { value: 'FEMALE', label: 'female' },
+  { value: 'MALE', label: 'male' },
 ];
 
 interface SignupPrefill {
@@ -56,8 +57,13 @@ export default function SignupPage() {
     }
     setBusy(true);
     try {
-      await signup(email, password, fullName, phone ? `${DIAL_CODE}${phone}` : undefined);
-      saveGender(email, gender!);
+      await signup(
+        email,
+        password,
+        fullName,
+        phone ? `${DIAL_CODE}${phone}` : undefined,
+        gender!,
+      );
       toast.success(t('signup.created'));
       navigate('/');
     } catch (err) {
@@ -88,6 +94,17 @@ export default function SignupPage() {
           />
           {err('fullName') && <span className={fieldError}>{err('fullName')}</span>}
         </label>
+        <div>
+          <span className={label}>{t('signup.gender')}</span>
+          <Select
+            value={gender ?? ''}
+            onChange={(v) => setGender(v ? (v as Gender) : null)}
+            invalid={!!err('gender')}
+            placeholder={t('signup.selectGender')}
+            options={GENDER_OPTIONS.map((g) => ({ value: g.value, label: t(`signup.${g.label}`) }))}
+          />
+          {err('gender') && <span className={fieldError}>{err('gender')}</span>}
+        </div>
         <label className="block">
           <span className={label}>{t('signup.email')}</span>
           <input
@@ -148,17 +165,6 @@ export default function SignupPage() {
           </div>
           {err('password') && <span className={fieldError}>{err('password')}</span>}
         </label>
-        <div>
-          <span className={label}>{t('signup.gender')}</span>
-          <Select
-            value={gender ?? ''}
-            onChange={(v) => setGender(v ? (v as Gender) : null)}
-            invalid={!!err('gender')}
-            placeholder={t('signup.selectGender')}
-            options={GENDER_OPTIONS.map((g) => ({ value: g.value, label: t(`signup.${g.label}`) }))}
-          />
-          {err('gender') && <span className={fieldError}>{err('gender')}</span>}
-        </div>
         <button
           type="submit"
           disabled={busy}
