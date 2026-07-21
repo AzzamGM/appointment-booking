@@ -696,7 +696,9 @@ export default function BookDoctorPage() {
                       return phone ? (
                         <span className="flex items-center gap-1">
                           <Pic src={img.phoneCall} className="h-4 w-4" />
-                          {phone}
+                          <span dir="ltr" className="[unicode-bidi:isolate]">
+                            {phone}
+                          </span>
                         </span>
                       ) : null;
                     })()}

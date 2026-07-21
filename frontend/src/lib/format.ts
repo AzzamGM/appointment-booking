@@ -13,6 +13,16 @@ export function toAsciiDigits(raw: string): string {
   });
 }
 
+// Show a Saudi number the way people read it locally: leading 0, no +966.
+export function localPhone(raw: string): string {
+  const digits = toAsciiDigits(raw).replace(/\D/g, '');
+  const national = digits.replace(/^966/, '');
+  const withZero = national.startsWith('0') ? national : `0${national}`;
+  return withZero.length === 10
+    ? `${withZero.slice(0, 3)} ${withZero.slice(3, 6)} ${withZero.slice(6)}`
+    : withZero;
+}
+
 export function formatMoney(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

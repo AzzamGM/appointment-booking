@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { img } from '../lib/images';
 import Pic from './Pic';
-import { toAsciiDigits } from '../lib/format';
+import { localPhone, toAsciiDigits } from '../lib/format';
 import { btnGhost, card } from '../lib/ui';
 
 const LENGTH = 4;
@@ -97,8 +97,11 @@ export default function OtpDialog({ phone, busy = false, onVerified, onCancel }:
           {phone ? (
             <>
               {t('otp.sentTo', { count: LENGTH })}{' '}
-              <span className="font-mono font-semibold text-stone-700 dark:text-stone-200">
-                {phone}
+              <span
+                dir="ltr"
+                className="inline-block font-mono font-semibold text-stone-700 [unicode-bidi:isolate] dark:text-stone-200"
+              >
+                {localPhone(phone)}
               </span>
             </>
           ) : (
