@@ -13,6 +13,7 @@ import Pic from './components/Pic';
 import Switch from './components/Switch';
 import Splash from './components/Splash';
 import Notifications from './components/Notifications';
+import WakeBanner from './components/WakeBanner';
 import BookingPage from './pages/BookingPage';
 import DoctorSchedulePage from './pages/DoctorSchedulePage';
 import DoctorsPage from './pages/DoctorsPage';
@@ -402,6 +403,7 @@ export default function App() {
       {(booting || switchingLang) && (
         <Splash label={t('common.loading')} leaving={booting ? leaving : langLeaving} />
       )}
+      <WakeBanner />
       <div className="aurora" aria-hidden="true" />
       <header
         ref={headerRef}

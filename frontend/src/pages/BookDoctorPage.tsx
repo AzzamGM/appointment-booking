@@ -306,7 +306,7 @@ export default function BookDoctorPage() {
           {isGuest && (
             <>
               <p className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
-                <Pic src={img.information} className="mt-px h-4.5 w-4.5 shrink-0" />
+                <Pic src={img.caution} className="mt-px h-4.5 w-4.5 shrink-0" />
                 Keep this reference. Guest bookings cannot be viewed or cancelled online, so quote
                 it to the front desk if you need to change anything. We sent the details to{' '}
                 {guestInfo.email}.
@@ -675,7 +675,7 @@ export default function BookDoctorPage() {
 
               {selectedService?.requiresApproval && (
                 <p className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
-                  <Pic src={img.information} className="mt-px h-4.5 w-4.5" />
+                  <Pic src={img.caution} className="mt-px h-4.5 w-4.5" />
                   {t('book.requiresApproval')}
                 </p>
               )}

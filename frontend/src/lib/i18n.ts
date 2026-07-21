@@ -175,6 +175,7 @@ const en = {
     notGreat: 'Not great',
     thanksFeedback: 'Thanks for the feedback!',
     sorryFeedback: "Sorry to hear that, we'll do better.",
+    actions: 'Actions',
     viewSummary: 'View summary',
     viewDetails: 'View details',
     noOptions: 'No options',
@@ -290,6 +291,11 @@ const en = {
     cancelFailed: 'We could not cancel that appointment. Please try again.',
     actionFailed: 'That action could not be completed. Please try again.',
     clipboard: 'Your browser blocked clipboard access.',
+  },
+  wake: {
+    title: 'Activating backend, please wait...',
+    countdown: 'This demo server sleeps when idle. About {{seconds}}s left.',
+    almost: 'Almost there, finishing up...',
   },
   notif: {
     title: 'Notifications',
@@ -515,6 +521,7 @@ const ar: typeof en = {
     notGreat: 'لم تكن جيدة',
     thanksFeedback: 'شكراً لملاحظاتك!',
     sorryFeedback: 'نأسف لسماع ذلك، وسنعمل على تحسين خدمتنا.',
+    actions: 'الإجراءات',
     viewSummary: 'عرض الملخص',
     viewDetails: 'عرض التفاصيل',
     noOptions: 'لا توجد خيارات',
@@ -629,6 +636,11 @@ const ar: typeof en = {
     cancelFailed: 'تعذر إلغاء هذا الموعد. يرجى المحاولة مرة أخرى.',
     actionFailed: 'تعذر إتمام هذا الإجراء. يرجى المحاولة مرة أخرى.',
     clipboard: 'منع متصفحك الوصول إلى الحافظة.',
+  },
+  wake: {
+    title: 'جارٍ تشغيل الخادم، يرجى الانتظار...',
+    countdown: 'خادم العرض التجريبي يتوقف عند عدم الاستخدام. يتبقى حوالي {{seconds}} ثانية.',
+    almost: 'اقتربنا، جارٍ الإنهاء...',
   },
   notif: {
     title: 'الإشعارات',

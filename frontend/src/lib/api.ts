@@ -1,4 +1,5 @@
 import i18n from './i18n';
+import { trackRequest } from './wake';
 const TOKEN_KEY = 'medibook.token';
 export const USER_KEY = 'medibook.user';
 
@@ -46,14 +47,16 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
-      method: options.method ?? 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-    });
+    res = await trackRequest(() =>
+      fetch(`${API_BASE}${path}`, {
+        method: options.method ?? 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      }),
+    );
   } catch {
     throw new ApiError(0, 'network');
   }

@@ -251,7 +251,7 @@ export default function StaffPage() {
                   actionButton(
                     a,
                     'cancel',
-                    a.status === 'REQUESTED' ? img.unapproved : img.delete,
+                    a.status === 'REQUESTED' ? img.unapproved : img.cancel,
                     a.status === 'REQUESTED' ? 'Decline' : 'Cancel',
                     t('appointments.cancelling'),
                     true,

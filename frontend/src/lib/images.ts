@@ -4,14 +4,17 @@ import addCalendar from '../assets/add-calendar.svg';
 import addUser from '../assets/add-user.svg';
 import approved from '../assets/approved.svg';
 import calendar from '../assets/calendar.svg';
+import cancel from '../assets/cancel.svg';
 import cancelled from '../assets/cancelled.svg';
 import cashNote from '../assets/cash-note.svg';
+import caution from '../assets/caution.svg';
 import checkUp from '../assets/check_up.svg';
 import clock from '../assets/clock.svg';
 import confirmed from '../assets/confirmed.svg';
 import copy from '../assets/copy.svg';
 import creditCard from '../assets/credit-card.svg';
 import customerServiceAgent from '../assets/customer-service-agent.svg';
+import danger from '../assets/danger.svg';
 import deleteIcon from '../assets/delete.svg';
 import disableBell from '../assets/disable-bell.svg';
 import email from '../assets/email.svg';
@@ -75,14 +78,17 @@ export const img = {
   addUser,
   approved,
   calendar,
+  cancel,
   cancelled,
   cashNote,
+  caution,
   checkUp,
   clock,
   confirmed,
   copy,
   creditCard,
   customerServiceAgent,
+  danger,
   delete: deleteIcon,
   disableBell,
   email,

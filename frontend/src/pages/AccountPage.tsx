@@ -250,7 +250,7 @@ export default function AccountPage() {
       {user.role === 'PATIENT' && (
       <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50/50 p-5 dark:border-rose-900/60 dark:bg-rose-950/20">
         <p className="flex items-center gap-2 font-semibold text-rose-900 dark:text-rose-200">
-          <Pic src={img.delete} className="h-5 w-5" />
+          <Pic src={img.danger} className="h-5 w-5" />
           {t('account.deleteTitle')}
         </p>
         <p className="mt-1 text-sm text-rose-700 dark:text-rose-300">

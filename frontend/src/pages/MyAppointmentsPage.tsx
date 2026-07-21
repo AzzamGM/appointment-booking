@@ -1,18 +1,18 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useLocalize } from '../lib/i18n';
-import { api, errorMessage } from '../lib/api';
+import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useSettings } from '../lib/settings';
-import { useToast } from '../lib/toast';
 import { statusStyle } from '../lib/labels';
 import { formatDate, formatTime } from '../lib/format';
 import { img, serviceIcon, statusIcon } from '../lib/images';
 import Pic from '../components/Pic';
 import Loading from '../components/Loading';
-import { btnDanger, btnPrimary, card, mutedText, pageTitle } from '../lib/ui';
+import AppointmentActions, { VisitRating } from '../components/AppointmentActions';
+import { btnPrimary, card, mutedText, pageTitle } from '../lib/ui';
 import type { Appointment } from '../types';
 
 function AppointmentSkeleton() {
@@ -27,81 +27,18 @@ function AppointmentSkeleton() {
   );
 }
 
-type Rating = 'up' | 'down';
-const ratingKey = (id: string) => `medibook:rating:${id}`;
-
-function VisitRating({ appointmentId }: { appointmentId: string }) {
-  const { t } = useTranslation();
-  const toast = useToast();
-  const [rating, setRating] = useState<Rating | null>(
-    () => localStorage.getItem(ratingKey(appointmentId)) as Rating | null,
-  );
-
-  const rate = (r: Rating) => {
-    localStorage.setItem(ratingKey(appointmentId), r);
-    setRating(r);
-    toast.success(t(r === 'up' ? 'appointments.thanksFeedback' : 'appointments.sorryFeedback'));
-  };
-
-  if (rating) {
-    return (
-      <span className="flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500">
-        <Pic src={rating === 'up' ? img.thumbsUp : img.thumbDown} className="h-6 w-6" />
-        {t('appointments.youRated')}
-      </span>
-    );
-  }
-  return (
-    <span className="flex items-center gap-1.5">
-      <span className="text-xs text-stone-400 dark:text-stone-500">How was your visit?</span>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          rate('up');
-        }}
-        title={t('appointments.goodVisit')}
-        className="rounded-lg p-1.5 transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
-      >
-        <Pic src={img.thumbsUp} alt="Thumbs up" className="h-6 w-6" />
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          rate('down');
-        }}
-        title={t('appointments.notGreat')}
-        className="rounded-lg p-1.5 transition-colors hover:bg-rose-50 dark:hover:bg-rose-500/10"
-      >
-        <Pic src={img.thumbDown} alt="Thumbs down" className="h-6 w-6" />
-      </button>
-    </span>
-  );
-}
-
 export default function MyAppointmentsPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const L = useLocalize();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const toast = useToast();
   const { notifications } = useSettings();
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
   const appointments = useQuery({
     queryKey: ['my-appointments'],
     enabled: !!user,
     queryFn: () => api<{ appointments: Appointment[] }>('/patients/me/appointments'),
-  });
-
-  const cancel = useMutation({
-    mutationFn: (id: string) => api<Appointment>(`/appointments/${id}/cancel`, { method: 'PATCH' }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-appointments'] });
-      toast.success(t('appointments.cancelled'));
-    },
-    onError: (err) => {
-      toast.error(errorMessage(err, t('errors.cancelFailed')));
-    },
   });
 
   if (!user) {
@@ -144,36 +81,7 @@ export default function MyAppointmentsPage() {
 
       <div className="space-y-3">
         {appointments.data?.appointments.map((a, i) => {
-          const canCancel = a.status === 'REQUESTED' || a.status === 'CONFIRMED';
           const canRate = a.status === 'COMPLETED';
-          const actions =
-            canCancel || canRate ? (
-              <div className="flex flex-wrap items-center gap-3">
-                {canRate && <VisitRating appointmentId={a.id} />}
-                {canCancel && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      cancel.mutate(a.id);
-                    }}
-                    disabled={cancel.isPending}
-                    className={`flex items-center gap-1.5 ${btnDanger}`}
-                  >
-                    {cancel.isPending && cancel.variables === a.id ? (
-                      <>
-                        <Pic src={img.hourglass} className="hourglass h-5 w-5" />
-                        {t('appointments.cancelling')}
-                      </>
-                    ) : (
-                      <>
-                        <Pic src={img.delete} className="h-5 w-5" />
-                        Cancel
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            ) : null;
 
           return (
           <div
@@ -187,36 +95,28 @@ export default function MyAppointmentsPage() {
                 navigate(`/appointments/${a.id}`);
               }
             }}
-            className={`${card} group rise relative cursor-pointer overflow-hidden p-4 hover:border-teal-300/70 dark:hover:border-teal-700/50`}
+            className={`${card} rise relative cursor-pointer p-4 hover:border-teal-300/70 dark:hover:border-teal-700/50 ${
+              menuOpenId === a.id ? 'z-20' : ''
+            }`}
             style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
           >
-            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/50 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100 dark:bg-stone-900/60">
-              <span className="text-xl font-bold text-stone-800 dark:text-stone-100">
-                {t('appointments.viewSummary')}
-              </span>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <span className="text-lg font-bold leading-none">{a.doctor.name}</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1.5">
+                <span className="min-w-0 truncate text-lg font-bold leading-none">
+                  {a.doctor.name}
+                </span>
                 <span
-                  className={`flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${statusStyle[a.status]}`}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${statusStyle[a.status]}`}
                 >
                   <Pic src={statusIcon[a.status]} className="h-4.5 w-4.5" />
                   {t(`statusShort.${a.status}`)}
                 </span>
               </div>
-              {actions && (
-                <div className="hidden sm:block" onClick={(e) => e.stopPropagation()}>
-                  {actions}
-                </div>
-              )}
-              <span className="flex items-center gap-1 text-xs font-semibold text-teal-700 dark:text-teal-300 sm:hidden">
-                {t('appointments.viewDetails')}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m9 18 6-6-6-6" />
-                </svg>
-              </span>
+              <AppointmentActions
+                appointment={a}
+                onViewSummary={() => navigate(`/appointments/${a.id}`)}
+                onOpenChange={(open) => setMenuOpenId(open ? a.id : null)}
+              />
             </div>
 
             <div className="mt-3 flex flex-col gap-1.5 border-t border-stone-100 pt-3 text-sm dark:border-stone-800 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
@@ -266,12 +166,12 @@ export default function MyAppointmentsPage() {
               </div>
             )}
 
-            {actions && (
+            {canRate && (
               <div
-                className="mt-3 border-t border-stone-100 pt-3 sm:hidden dark:border-stone-800"
+                className="mt-3 border-t border-stone-100 pt-3 dark:border-stone-800"
                 onClick={(e) => e.stopPropagation()}
               >
-                {actions}
+                <VisitRating appointmentId={a.id} />
               </div>
             )}
           </div>
