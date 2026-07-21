@@ -94,20 +94,16 @@ export default function OtpDialog({ phone, busy = false, onVerified, onCancel }:
         <Pic src={img.otp} className="mx-auto h-14 w-14" />
         <h2 className="mt-3 font-display text-lg font-bold">{t('otp.title')}</h2>
         <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          {phone ? (
-            <>
-              {t('otp.sentTo', { count: LENGTH })}{' '}
-              <span
-                dir="ltr"
-                className="inline-block font-mono font-semibold text-stone-700 [unicode-bidi:isolate] dark:text-stone-200"
-              >
-                {localPhone(phone)}
-              </span>
-            </>
-          ) : (
-            t('otp.sentToAccount', { count: LENGTH })
-          )}
+          {phone ? t('otp.sentTo', { count: LENGTH }) : t('otp.sentToAccount', { count: LENGTH })}
         </p>
+        {phone && (
+          <p
+            dir="ltr"
+            className="mt-1.5 font-mono text-lg font-bold tracking-wide text-stone-700 [unicode-bidi:isolate] dark:text-stone-200"
+          >
+            {localPhone(phone)}
+          </p>
+        )}
 
         <div dir="ltr" style={{ direction: 'ltr' }} className="mt-5 flex flex-row justify-center gap-2.5">
           {digits.map((digit, i) => (

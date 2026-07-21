@@ -638,7 +638,6 @@ export default function BookDoctorPage() {
               <div ref={paymentOptionsRef} className="scroll-mt-20">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {PAYMENT_OPTIONS.map((opt) => {
-                    // Front desk settles in person, so online payment is not offered.
                     const locked = isStaff && opt.value === 'online';
                     return (
                     <button

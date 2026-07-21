@@ -81,7 +81,12 @@ export default function AppointmentSummary({ appointment: a }: { appointment: Ap
 
         <div className="flex items-center gap-3">
           <Pic
-            src={userAvatar(a.patient.email ?? a.patient.id ?? '', 'PATIENT')}
+            src={userAvatar(
+              (user && user.id === a.patient.id ? user.email : a.patient.email) ??
+                a.patient.id ??
+                '',
+              'PATIENT',
+            )}
             fit="cover"
             className="h-11 w-11 shrink-0 rounded-full border border-stone-200 bg-white p-0.5 dark:border-stone-700 dark:bg-stone-800"
           />

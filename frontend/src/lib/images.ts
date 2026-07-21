@@ -213,6 +213,7 @@ export function userAvatar(email: string, role: string): string {
   if (role === 'STAFF') return customerServiceAgent;
   if (role === 'DOCTOR') return doctorAvatar('');
   if (role !== 'PATIENT') return user;
+  if (!email.trim()) return user;
 
   const stored = localStorage.getItem(genderKey(email));
   if (stored === 'female') return femaleUser;

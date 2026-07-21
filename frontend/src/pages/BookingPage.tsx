@@ -84,14 +84,14 @@ export default function BookingPage() {
         </div>
       )}
 
-      <section className="mt-6">
+      <section className={`${card} mt-6 p-4`}>
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
           <StepBadge n={1} /> {t('booking.step1')}
           <Pic src={img.locationPin} className="h-5 w-5" />
         </h2>
 
         {selectedClinic ? (
-          <div className={`${card} rise flex flex-wrap items-center gap-3 p-4`}>
+          <div className="rise flex flex-wrap items-center gap-3 rounded-xl border border-teal-200 bg-teal-50/60 p-3 dark:border-teal-800/60 dark:bg-teal-500/5">
             <Pic src={img.mapLocation} className="h-10 w-10" />
             <div className="flex-1">
               <p className="font-semibold">
@@ -114,7 +114,7 @@ export default function BookingPage() {
         ) : clinics.isLoading ? (
           <Loading text={t('booking.loadingLocations')} />
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {(clinics.data?.clinics ?? []).map((c) => {
               const count = (doctors.data?.doctors ?? []).filter((d) =>
                 d.clinics.some((dc) => dc.code === c.code),
@@ -123,7 +123,7 @@ export default function BookingPage() {
                 <button
                   key={c.code}
                   onClick={() => chooseClinic(c.code)}
-                  className={`${card} rise flex items-center gap-3 p-4 text-start hover:-translate-y-0.5`}
+                  className="flex items-center gap-3 rounded-xl border border-stone-200 bg-stone-50 p-3 text-start text-stone-700 transition-all hover:border-teal-400 hover:bg-teal-50 active:scale-95 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-300 dark:hover:border-teal-600 dark:hover:bg-teal-500/10"
                 >
                   <Pic src={img.mapLocation} className="h-12 w-12 shrink-0" />
                   <span className="min-w-0">
@@ -143,13 +143,13 @@ export default function BookingPage() {
       </section>
 
       {clinicCode && (
-      <section ref={specialtyStepRef} className="rise mt-6 scroll-mt-20">
+      <section ref={specialtyStepRef} className={`${card} rise mt-6 scroll-mt-20 p-4`}>
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
           <StepBadge n={2} /> {t('booking.step2')}
         </h2>
 
         {specialty ? (
-          <div className={`${card} rise flex flex-wrap items-center gap-3 p-4`}>
+          <div className="rise flex flex-wrap items-center gap-3 rounded-xl border border-teal-200 bg-teal-50/60 p-3 dark:border-teal-800/60 dark:bg-teal-500/5">
             <Pic src={specialtyIcon[specialty]} className="h-10 w-10" />
             <div className="flex-1">
               <p className="font-semibold">{t(`specialty.${specialty}`)}</p>
@@ -164,7 +164,7 @@ export default function BookingPage() {
         ) : doctors.isLoading ? (
           <Loading text={t('booking.loadingSpecialties')} />
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {SPECIALTIES.map((s) => {
               const count = bySpecialty.get(s)?.length ?? 0;
               const empty = count === 0;
@@ -173,8 +173,10 @@ export default function BookingPage() {
                   key={s}
                   disabled={empty}
                   onClick={() => setSpecialty(s)}
-                  className={`${card} flex flex-col items-center gap-2 p-4 text-center ${
-                    empty ? 'cursor-not-allowed opacity-45' : 'rise hover:-translate-y-0.5'
+                  className={`flex flex-col items-center gap-2 rounded-xl border p-3 text-center text-stone-700 transition-all dark:text-stone-300 ${
+                    empty
+                      ? 'cursor-not-allowed border-stone-200 bg-stone-50 opacity-50 dark:border-stone-700 dark:bg-stone-950'
+                      : 'border-stone-200 bg-stone-50 hover:border-teal-400 hover:bg-teal-50 active:scale-95 dark:border-stone-700 dark:bg-stone-950 dark:hover:border-teal-600 dark:hover:bg-teal-500/10'
                   }`}
                 >
                   <Pic src={specialtyIcon[s]} className="h-14 w-14" />
@@ -193,17 +195,16 @@ export default function BookingPage() {
       )}
 
       {specialty && (
-      <section ref={doctorStepRef} className="rise mt-6 scroll-mt-20">
+      <section ref={doctorStepRef} className={`${card} rise mt-6 scroll-mt-20 p-4`}>
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
           <StepBadge n={3} /> {t('booking.step3')}
         </h2>
 
-        <div className="space-y-3">
-          {shortlist.map((d, i) => (
+        <div className="space-y-2">
+          {shortlist.map((d) => (
             <div
               key={d.id}
-              className={`${card} rise group flex flex-wrap items-center gap-4 p-4 sm:p-5`}
-              style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+              className="group flex flex-wrap items-center gap-4 rounded-xl border border-stone-200 bg-stone-50 p-3 transition-all hover:border-teal-400 hover:bg-teal-50 dark:border-stone-700 dark:bg-stone-950 dark:hover:border-teal-600 dark:hover:bg-teal-500/10"
             >
               <Pic
                 src={doctorAvatar(d.name)}

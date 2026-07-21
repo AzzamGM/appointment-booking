@@ -153,7 +153,7 @@ const en = {
   },
   otp: {
     title: 'Confirm your number',
-    sentTo: 'We sent a {{count}} digit code to',
+    sentTo: 'We sent a {{count}} digit code to:',
     sentToAccount: 'We sent a {{count}} digit code to the mobile number on your account.',
     resendIn: "Didn't get it? You can resend in {{seconds}}s",
     resend: 'Resend code',
@@ -588,7 +588,7 @@ const ar: typeof en = {
   },
   otp: {
     title: 'تأكيد رقم جوالك',
-    sentTo: 'أرسلنا رمزاً مكوناً من {{count}} أرقام إلى',
+    sentTo: 'أرسلنا رمزاً مكوناً من {{count}} أرقام إلى:',
     sentToAccount: 'أرسلنا رمزاً مكوناً من {{count}} أرقام إلى رقم الجوال المسجل في حسابك.',
     resendIn: 'لم يصلك الرمز؟ يمكنك إعادة الإرسال خلال {{seconds}} ثانية',
     resend: 'إعادة إرسال الرمز',
