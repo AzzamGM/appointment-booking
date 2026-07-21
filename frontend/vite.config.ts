@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
+  base: '/appointment-booking/',
   plugins: [react(), tailwindcss()],
   server: {
     // Listen on all interfaces so other devices on the LAN can open the app.

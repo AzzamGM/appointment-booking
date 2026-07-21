@@ -43,7 +43,7 @@ export default function LoginPage() {
     try {
       await login(email, password);
       setRedirecting(true);
-      window.location.assign('/');
+      window.location.assign(import.meta.env.BASE_URL);
     } catch (err) {
       toast.error(errorMessage(err, t('login.failed')));
       setBusy(false);

@@ -2,6 +2,8 @@ import i18n from './i18n';
 const TOKEN_KEY = 'medibook.token';
 export const USER_KEY = 'medibook.user';
 
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
+
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
@@ -44,7 +46,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
 
   let res: Response;
   try {
-    res = await fetch(`/api${path}`, {
+    res = await fetch(`${API_BASE}${path}`, {
       method: options.method ?? 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -61,7 +63,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     if (res.status === 401 && token) {
       clearToken();
       localStorage.removeItem(USER_KEY);
-      window.location.assign('/login');
+      window.location.assign(`${import.meta.env.BASE_URL}login`);
     }
     const message = data?.error?.message ?? `Request failed (${res.status})`;
     throw new ApiError(res.status, message, data?.error?.details);

@@ -2,7 +2,7 @@
   "name": "clinic-appointments",
   "private": true,
   "version": "0.1.0",
-  "description": "Full-stack medical clinic appointment system — a backend learning project with intentional gaps. See LEARNING_GUIDE.md.",
+  "description": "Full-stack medical clinic appointment system.",
   "workspaces": [
     "backend",
     "frontend"

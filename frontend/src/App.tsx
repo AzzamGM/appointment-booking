@@ -218,7 +218,7 @@ function ProfileMenu({
                   setOpen(false);
                   onNavigate();
                   logout();
-                  window.location.assign('/');
+                  window.location.assign(import.meta.env.BASE_URL);
                 }}
                 className={`${row} w-full text-start text-sm text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40`}
               >

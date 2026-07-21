@@ -62,7 +62,7 @@ export default function AccountPage() {
     onSuccess: () => {
       logout();
       toast.success(t('account.deleted'));
-      window.location.assign('/');
+      window.location.assign(import.meta.env.BASE_URL);
     },
     onError: (err) => toast.error(errorMessage(err, t('account.deleteFailed'))),
   });
