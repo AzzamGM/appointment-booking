@@ -150,6 +150,9 @@ export default function BookDoctorPage() {
     queryFn: () => api<MonthAvailability>(`/doctors/${id}/availability?month=${toYM(month)}`),
   });
 
+  const noSlotsThisMonth =
+    monthAvailability.data?.days.length === 0 && !monthAvailability.isFetching;
+
   const dayAvailability = useQuery({
     queryKey: ['availability-day', id, selectedDate && toYMD(selectedDate)],
     enabled: !!selectedDate,
@@ -232,16 +235,6 @@ export default function BookDoctorPage() {
     (!isGuest || isGuestValid(guestInfo)) && (!isWalkIn || isGuestValid(guestInfo, false));
   const selectedSlot = dayAvailability.data?.slots.find((s) => s.id === selectedSlotId);
 
-  const bookAnother = () => {
-    setCompletedBooking(null);
-    setSelectedDate(undefined);
-    setSelectedSlotId(null);
-    setDateOpen(true);
-    setTimesOpen(true);
-    setServiceId('');
-    setPayment(null);
-  };
-
   const bookingReady =
     !!serviceId && !!payment && cardReady && guestReady && !(isStaff && !bookingFor);
 
@@ -275,12 +268,12 @@ export default function BookDoctorPage() {
     <div>
       <button
         onClick={() => navigate(-1)}
-        className="mb-4 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-teal-700 transition-colors hover:bg-teal-50 dark:text-teal-400 dark:hover:bg-teal-500/10"
+        className="mb-4 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-base font-medium text-teal-700 transition-colors hover:bg-teal-50 dark:text-teal-400 dark:hover:bg-teal-500/10"
       >
         <svg
           className="rtl:rotate-180"
-          width="16"
-          height="16"
+          width="20"
+          height="20"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -370,9 +363,6 @@ export default function BookDoctorPage() {
                 {t('nav.myAppointments')}
               </Link>
             )}
-            <button onClick={bookAnother} className={`text-center ${btnGhost}`}>
-              {t('book.bookAnother')}
-            </button>
           </div>
         </div>
       )}
@@ -415,8 +405,8 @@ export default function BookDoctorPage() {
             <>
               <div className="relative">
                 <div
-                  className={`flex justify-center overflow-x-auto transition-opacity duration-200 ${
-                    monthAvailability.isFetching ? 'pointer-events-none opacity-40' : ''
+                  className={`flex justify-center overflow-x-auto ${
+                    monthAvailability.isFetching || noSlotsThisMonth ? 'calendar-dim' : ''
                   }`}
                 >
                   <DayPicker
@@ -440,12 +430,14 @@ export default function BookDoctorPage() {
                     <Loading text={t('book.checkingAvailability')} />
                   </div>
                 )}
+                {noSlotsThisMonth && (
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center">
+                    <p className="text-sm font-medium text-stone-500 dark:text-stone-400">
+                      {t('book.noSlotsThisMonth')}
+                    </p>
+                  </div>
+                )}
               </div>
-              {monthAvailability.data?.days.length === 0 && !monthAvailability.isFetching && (
-                <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                  {t('book.noSlotsThisMonth')}
-                </p>
-              )}
             </>
           )}
         </div>

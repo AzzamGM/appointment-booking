@@ -103,6 +103,9 @@ html[lang="ar"] .tracking-widest {
 [dir="rtl"] .rdp-root {
   direction: rtl;
 }
+[dir="rtl"] .rdp-chevron {
+  transform: rotate(180deg);
+}
 
 
 .aurora {
@@ -476,4 +479,18 @@ html.dark {
 }
 .rdp-day[data-selected="true"] .rdp-day_button:hover {
   background: var(--rdp-accent-color);
+}
+.calendar-dim .rdp-month_grid {
+  opacity: 0.4;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.rdp-button_previous,
+.rdp-button_next {
+  border-radius: 9999px;
+  transition: background-color 0.15s ease;
+}
+.rdp-button_previous:hover,
+.rdp-button_next:hover {
+  background: var(--rdp-accent-background-color);
 }

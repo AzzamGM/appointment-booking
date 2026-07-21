@@ -36,7 +36,7 @@ export default function ReferenceChip({
       title={copied ? t('common.copied') : t('common.copyReference')}
       aria-label={t('common.copyReference')}
       className={`flex w-fit shrink-0 items-center gap-1.5 rounded-lg transition-colors ${
-        small ? 'px-1.5 py-0.5 text-xs' : 'px-2.5 py-1'
+        small ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-sm'
       } ${
         copied
           ? 'bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400'

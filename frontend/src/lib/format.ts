@@ -1,3 +1,9 @@
+import i18n from './i18n';
+
+function dateLocale(): string {
+  return i18n.language === 'ar' ? 'ar' : 'en-US';
+}
+
 export function formatMoney(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -8,12 +14,16 @@ export function formatMoney(amount: number): string {
 }
 
 export function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-US', {
+  const time = new Date(iso).toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
     timeZone: 'UTC',
   });
+  if (i18n.language === 'ar') {
+    return time.replace('AM', 'ص').replace('PM', 'م');
+  }
+  return time;
 }
 
 export function splitTime(iso: string): { clock: string; period: string } {
@@ -22,7 +32,7 @@ export function splitTime(iso: string): { clock: string; period: string } {
 }
 
 export function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', {
+  return new Date(iso).toLocaleDateString(dateLocale(), {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

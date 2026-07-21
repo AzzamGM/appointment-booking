@@ -60,7 +60,7 @@ const en = {
     loadingSpecialties: 'Loading specialties...',
     doctorsAtBranch: 'Doctors at this branch',
     doctorsAvailable: 'Doctors available',
-    noneAvailable: 'None available',
+    noneAvailable: 'No doctors at this branch',
     pickTime: 'Pick a time',
     loadFailed: "Couldn't load doctors",
     lookingForSomeone: 'Looking for someone specific?',
@@ -120,7 +120,6 @@ const en = {
     guestNotice: 'You are booking as a guest, so we need a way to reach you about this visit.',
     signUpOrLogIn: 'to book faster in the future',
     or: 'or',
-    bookAnother: 'Book another visit',
     upsellTitle: 'Want an easier time next visit?',
     upsellBody:
       'With an account your details are filled in for you, and you can see, rate and cancel your appointments without calling the clinic.',
@@ -496,7 +495,7 @@ const ar: typeof en = {
     loadingSpecialties: 'جارٍ تحميل التخصصات...',
     doctorsAtBranch: 'الأطباء في هذا الفرع',
     doctorsAvailable: 'الأطباء المتاحون',
-    noneAvailable: 'لا يوجد أطباء',
+    noneAvailable: 'لا يوجد أطباء في هذا الفرع',
     pickTime: 'اختر الوقت',
     loadFailed: 'تعذر تحميل الأطباء',
     lookingForSomeone: 'تبحث عن طبيب معيّن؟',
@@ -555,7 +554,6 @@ const ar: typeof en = {
     guestNotice: 'أنت تحجز كزائر، لذا نحتاج وسيلة للتواصل معك بشأن هذه الزيارة.',
     signUpOrLogIn: 'لحجز أسرع في المستقبل',
     or: 'أو',
-    bookAnother: 'حجز موعد آخر',
     upsellTitle: 'تريد تجربة أسهل في زيارتك القادمة؟',
     upsellBody:
       'بامتلاكك حساباً، تُعبأ بياناتك تلقائياً، ويمكنك عرض مواعيدك وتقييمها وإلغاؤها دون الحاجة إلى الاتصال بالعيادة.',

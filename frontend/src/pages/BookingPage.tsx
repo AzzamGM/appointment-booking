@@ -91,7 +91,7 @@ export default function BookingPage() {
         </h2>
 
         {selectedClinic ? (
-          <div className={`${card} flex flex-wrap items-center gap-3 p-4`}>
+          <div className={`${card} rise flex flex-wrap items-center gap-3 p-4`}>
             <Pic src={img.mapLocation} className="h-10 w-10" />
             <div className="flex-1">
               <p className="font-semibold">
@@ -149,7 +149,7 @@ export default function BookingPage() {
         </h2>
 
         {specialty ? (
-          <div className={`${card} flex flex-wrap items-center gap-3 p-4`}>
+          <div className={`${card} rise flex flex-wrap items-center gap-3 p-4`}>
             <Pic src={specialtyIcon[specialty]} className="h-10 w-10" />
             <div className="flex-1">
               <p className="font-semibold">{t(`specialty.${specialty}`)}</p>
@@ -173,8 +173,8 @@ export default function BookingPage() {
                   key={s}
                   disabled={empty}
                   onClick={() => setSpecialty(s)}
-                  className={`${card} rise flex flex-col items-center gap-2 p-4 text-center ${
-                    empty ? 'cursor-not-allowed opacity-50' : 'hover:-translate-y-0.5'
+                  className={`${card} flex flex-col items-center gap-2 p-4 text-center ${
+                    empty ? 'cursor-not-allowed opacity-45' : 'rise hover:-translate-y-0.5'
                   }`}
                 >
                   <Pic src={specialtyIcon[s]} className="h-14 w-14" />
