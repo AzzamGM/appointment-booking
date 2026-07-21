@@ -6,6 +6,7 @@ interface AuthContextValue {
   user: PublicUser | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, fullName: string, phone?: string) => Promise<void>;
+  setUserData: (user: PublicUser) => void;
   logout: () => void;
 }
 
@@ -42,6 +43,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const setUserData = (next: PublicUser) => {
+    localStorage.setItem(USER_KEY, JSON.stringify(next));
+    setUser(next);
+  };
+
   const logout = () => {
     clearToken();
     localStorage.removeItem(USER_KEY);
@@ -49,7 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, login, signup, setUserData, logout }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 

@@ -14,6 +14,10 @@ import creditCard from '../assets/credit-card.svg';
 import customerServiceAgent from '../assets/customer-service-agent.svg';
 import deleteIcon from '../assets/delete.svg';
 import disableBell from '../assets/disable-bell.svg';
+import email from '../assets/email.svg';
+import errorNetwork from '../assets/network_error.svg';
+import errorGeneral from '../assets/general_error.svg';
+import errorNotFound from '../assets/404_error.svg';
 import doctorAppointment from '../assets/doctor-appointment.svg';
 import femaleDoctor from '../assets/female_doctor.svg';
 import femaleNurse from '../assets/female_nurse.svg';
@@ -42,6 +46,7 @@ import newIcon from '../assets/new.svg';
 import noShow from '../assets/no-show.svg';
 import notificationBell from '../assets/notification-bell.svg';
 import onlineConsultation from '../assets/online-consulation.svg';
+import password from '../assets/password.svg';
 import paymentMethod from '../assets/payment-method.svg';
 import phoneCall from '../assets/phone-call.svg';
 import physicalCheck from '../assets/physical_check.svg';
@@ -80,6 +85,10 @@ export const img = {
   customerServiceAgent,
   delete: deleteIcon,
   disableBell,
+  email,
+  errorNetwork,
+  errorGeneral,
+  errorNotFound,
   doctorAppointment,
   femaleDoctor,
   femaleNurse,
@@ -108,6 +117,7 @@ export const img = {
   notificationBell,
   onlineConsultation,
   otp,
+  password,
   paymentMethod,
   phoneCall,
   physicalCheck,

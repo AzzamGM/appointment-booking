@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, ApiError } from '../lib/api';
+import { useTranslation } from 'react-i18next';
+import { useLocalize } from '../lib/i18n';
+import { api, errorMessage } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
 import { statusStyle } from '../lib/labels';
@@ -9,7 +11,8 @@ import { img, serviceIcon, statusIcon, userAvatar } from '../lib/images';
 import Pic from '../components/Pic';
 import Loading from '../components/Loading';
 import PrescribeForm from '../components/PrescribeForm';
-import { btnGhost, card, errorText, mutedText, pageTitle } from '../lib/ui';
+import ErrorState from '../components/ErrorState';
+import { btnGhost, card, mutedText, pageTitle } from '../lib/ui';
 import type { Appointment } from '../types';
 
 function groupByDay(appointments: Appointment[]) {
@@ -23,6 +26,8 @@ function groupByDay(appointments: Appointment[]) {
 
 export default function DoctorSchedulePage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const L = useLocalize();
   const toast = useToast();
   const queryClient = useQueryClient();
   const [prescribingId, setPrescribingId] = useState<string | null>(null);
@@ -41,10 +46,10 @@ export default function DoctorSchedulePage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['doctor-schedule'] });
-      toast.success('Visit marked completed.');
+      toast.success(t('schedule.completed'));
     },
     onError: (err) => {
-      toast.error(err instanceof ApiError ? err.message : 'Could not complete the visit.');
+      toast.error(errorMessage(err, t('errors.actionFailed')));
     },
   });
 
@@ -56,7 +61,7 @@ export default function DoctorSchedulePage() {
   if (user?.role !== 'DOCTOR') {
     return (
       <p className="text-sm text-stone-600 dark:text-stone-300">
-        This page is for doctors. Log in as doctor@medibook.test to try it.
+        {t('schedule.doctorsOnly')}
       </p>
     );
   }
@@ -67,28 +72,29 @@ export default function DoctorSchedulePage() {
     <div>
       <h1 className={`flex items-center gap-2.5 ${pageTitle}`}>
         <Pic src={img.checkUp} className="h-10 w-10" />
-        My schedule
+        {t('schedule.title')}
       </h1>
       <p className={`mb-4 mt-1 ${mutedText}`}>
         {total > 0
-          ? `${total} upcoming ${total === 1 ? 'patient' : 'patients'} across ${days.length} ${
-              days.length === 1 ? 'day' : 'days'
-            }.`
-          : 'Patients booked onto your clinic hours appear here.'}
+          ? t('schedule.subtitle', { patients: total, days: days.length })
+          : t('schedule.empty')}
       </p>
 
-      {appointments.isLoading && <Loading text="Loading your schedule..." />}
+      {appointments.isLoading && <Loading text={t('schedule.loading')} />}
 
       {appointments.isError && (
-        <p className={errorText}>
-          Failed to load your schedule: {(appointments.error as ApiError).message}
-        </p>
+        <ErrorState
+          title={t('schedule.loadFailed')}
+          error={appointments.error}
+          onRetry={() => appointments.refetch()}
+          retrying={appointments.isFetching}
+        />
       )}
 
       {appointments.data && total === 0 && (
         <div className={`${card} flex flex-col items-center gap-3 p-10 text-center`}>
           <Pic src={img.calendar} className="h-16 w-16 opacity-80" />
-          <p className={mutedText}>Nothing booked yet. Enjoy the quiet.</p>
+          <p className={mutedText}>{t('schedule.empty')}</p>
         </div>
       )}
 
@@ -119,7 +125,7 @@ export default function DoctorSchedulePage() {
                     src={userAvatar(a.patient.id ?? a.patient.fullName, 'PATIENT')}
                     alt=""
                     fit="cover"
-                    className="h-10 w-10 shrink-0 rounded-full bg-stone-100 dark:bg-stone-800"
+                    className="h-10 w-10 shrink-0 rounded-full bg-stone-100 ring-2 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700"
                   />
 
                   <div className="min-w-0 flex-1">
@@ -127,11 +133,12 @@ export default function DoctorSchedulePage() {
                     <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-stone-500 dark:text-stone-400">
                       <span className="flex items-center gap-1">
                         <Pic src={serviceIcon(a.service.name)} className="h-4.5 w-4.5" />
-                        {a.service.name} - {a.service.durationMinutes} min
+                        {L(a.service.name, a.service.nameAr)} - {a.service.durationMinutes}{' '}
+                        {t('common.minutes')}
                       </span>
                       <span className="flex items-center gap-1">
                         <Pic src={img.locationPin} className="h-4 w-4" />
-                        {a.clinic.name}
+                        {L(a.clinic.name, a.clinic.nameAr)}
                       </span>
                     </p>
                     {a.notes && (
@@ -156,7 +163,7 @@ export default function DoctorSchedulePage() {
                       className={`flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${statusStyle[a.status]}`}
                     >
                       <Pic src={statusIcon[a.status]} className="h-4.5 w-4.5" />
-                      {a.status.replace('_', ' ')}
+                      {t(`statusShort.${a.status}`)}
                     </span>
 
                     {a.status === 'CHECKED_IN' && (
@@ -168,12 +175,12 @@ export default function DoctorSchedulePage() {
                         {complete.isPending && complete.variables === a.id ? (
                           <>
                             <Pic src={img.hourglass} className="hourglass h-5 w-5" />
-                            Completing...
+                            {t('schedule.completing')}
                           </>
                         ) : (
                           <>
                             <Pic src={img.healthy} className="h-5 w-5" />
-                            Complete
+                            {t('schedule.complete')}
                           </>
                         )}
                       </button>

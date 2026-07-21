@@ -4,6 +4,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { api } from './lib/api';
 import { useAuth } from './lib/auth';
 import { useTheme } from './lib/theme';
+import { useTranslation } from 'react-i18next';
+import { LANG_SWITCH_MS, useLang, type Lang } from './lib/i18n';
 import { useSettings } from './lib/settings';
 import { img, userAvatar } from './lib/images';
 import { useBookingNotifications } from './lib/notifications';
@@ -18,6 +20,7 @@ import BookDoctorPage from './pages/BookDoctorPage';
 import MyAppointmentsPage from './pages/MyAppointmentsPage';
 import AppointmentDetailPage from './pages/AppointmentDetailPage';
 import StaffPage from './pages/StaffPage';
+import AccountPage from './pages/AccountPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 
@@ -36,14 +39,18 @@ const preloadImage = (src: string) =>
 
 function ProfileMenu({
   onNavigate,
+  onChangeLang,
   compact = false,
 }: {
   onNavigate: () => void;
+  onChangeLang: (next: Lang) => void;
   compact?: boolean;
 }) {
   const { user, logout } = useAuth();
   const { theme, toggle } = useTheme();
   const { notifications, setNotifications } = useSettings();
+  const { t } = useTranslation();
+  const { lang } = useLang();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -74,8 +81,8 @@ function ProfileMenu({
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        title={user ? 'Account settings' : 'Settings'}
-        aria-label={user ? 'Account settings' : 'Settings'}
+        title={user ? t('common.accountSettings') : t('common.settings')}
+        aria-label={user ? t('common.accountSettings') : t('common.settings')}
         className={`group flex items-center rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 ${
           iconOnly ? 'h-9 w-9 justify-center' : 'w-full gap-2 px-1.5 py-1'
         }`}
@@ -105,7 +112,7 @@ function ProfileMenu({
       {open && (
         <div
           role="menu"
-          className="drop absolute right-0 z-30 mt-2 w-72 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-900"
+          className="drop absolute end-0 z-30 mt-2 w-72 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-900"
         >
           {user && (
             <div className="flex items-center gap-3 border-b border-stone-100 p-3 dark:border-stone-800">
@@ -113,7 +120,7 @@ function ProfileMenu({
                 src={userAvatar(user.email, user.role)}
                 alt=""
                 fit="cover"
-                className="h-11 w-11 rounded-full bg-stone-100 dark:bg-stone-800"
+                className="h-11 w-11 rounded-full bg-stone-100 ring-2 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700"
               />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{user.fullName}</p>
@@ -127,13 +134,54 @@ function ProfileMenu({
 
           <div className="p-1.5">
             <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-              Settings
+              {t('common.settings')}
             </p>
 
             <div className={row}>
               <Pic src={theme === 'dark' ? img.moon : img.sun} className="h-6 w-6" />
-              <span className="flex-1 text-sm">Dark mode</span>
-              <Switch checked={theme === 'dark'} onChange={toggle} label="Dark mode" />
+              <span className="flex-1 text-sm">{t('common.darkMode')}</span>
+              <Switch checked={theme === 'dark'} onChange={toggle} label={t('common.darkMode')} />
+            </div>
+
+            <div className={row}>
+              <svg
+                className="h-6 w-6 text-stone-500 dark:text-stone-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18" />
+              </svg>
+              <span className="flex-1 text-sm">{t('common.language')}</span>
+              <div className="flex overflow-hidden rounded-lg border border-stone-300 dark:border-stone-700">
+                <button
+                  onClick={() => onChangeLang('ar')}
+                  aria-pressed={lang === 'ar'}
+                  className={`px-2.5 py-1 text-xs font-semibold transition-colors ${
+                    lang === 'ar'
+                      ? 'bg-teal-600 text-white'
+                      : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
+                  }`}
+                >
+                  العربية
+                </button>
+                <button
+                  onClick={() => onChangeLang('en')}
+                  aria-pressed={lang === 'en'}
+                  className={`px-2.5 py-1 text-xs font-semibold transition-colors ${
+                    lang === 'en'
+                      ? 'bg-teal-600 text-white'
+                      : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
+                  }`}
+                >
+                  English
+                </button>
+              </div>
             </div>
 
             {user && (
@@ -142,11 +190,11 @@ function ProfileMenu({
                   src={notifications ? img.notificationBell : img.disableBell}
                   className="h-6 w-6"
                 />
-                <span className="flex-1 text-sm">Notifications</span>
+                <span className="flex-1 text-sm">{t('common.notifications')}</span>
                 <Switch
                   checked={notifications}
                   onChange={setNotifications}
-                  label="Enable notifications"
+                  label={t('common.notifications')}
                 />
               </div>
             )}
@@ -154,6 +202,17 @@ function ProfileMenu({
 
           {user && (
             <div className="border-t border-stone-100 p-1.5 dark:border-stone-800">
+              <Link
+                to="/account"
+                onClick={() => {
+                  setOpen(false);
+                  onNavigate();
+                }}
+                className={`${row} text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800`}
+              >
+                <Pic src={img.userInfo} className="h-6 w-6" />
+                {t('common.accountSettings')}
+              </Link>
               <button
                 onClick={() => {
                   setOpen(false);
@@ -161,10 +220,10 @@ function ProfileMenu({
                   logout();
                   window.location.assign('/');
                 }}
-                className={`${row} w-full text-left text-sm text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40`}
+                className={`${row} w-full text-start text-sm text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40`}
               >
                 <Pic src={img.idCard} className="h-6 w-6" />
-                Log out
+                {t('common.logOut')}
               </button>
             </div>
           )}
@@ -176,12 +235,40 @@ function ProfileMenu({
 
 export default function App() {
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const { lang, setLang } = useLang();
+  const [switchingLang, setSwitchingLang] = useState(false);
+  const [langLeaving, setLangLeaving] = useState(false);
+  const langTimers = useRef<number[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [booting, setBooting] = useState(true);
   const [leaving, setLeaving] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const queryClient = useQueryClient();
   const notif = useBookingNotifications();
+
+  const requestLangChange = (next: Lang) => {
+    if (next === lang || switchingLang) return;
+    setSwitchingLang(true);
+    setLangLeaving(false);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        setLang(next);
+        langTimers.current.push(
+          window.setTimeout(() => setLangLeaving(true), LANG_SWITCH_MS),
+          window.setTimeout(() => {
+            setSwitchingLang(false);
+            setLangLeaving(false);
+          }, LANG_SWITCH_MS + SPLASH_FADE_MS),
+        );
+      }),
+    );
+  };
+
+  useEffect(() => {
+    const timers = langTimers.current;
+    return () => timers.forEach(window.clearTimeout);
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -261,37 +348,37 @@ export default function App() {
       {user?.role !== 'DOCTOR' && (
         <NavLink to="/" className={navLink} end onClick={closeMenu}>
           <Pic src={img.addCalendar} className="h-6 w-6" />
-          Book an appointment
+          {t('nav.book')}
         </NavLink>
       )}
       {user?.role === 'DOCTOR' && (
-        <NavLink to="/schedule" className={navLink} onClick={closeMenu}>
+        <NavLink to="/" className={navLink} end onClick={closeMenu}>
           <Pic src={img.checkUp} className="h-6 w-6" />
-          My schedule
+          {t('nav.mySchedule')}
         </NavLink>
       )}
       {user?.role === 'PATIENT' && (
         <NavLink to="/appointments" className={navLink} onClick={closeMenu}>
           <Pic src={img.calendar} className="h-6 w-6" />
-          My appointments
+          {t('nav.myAppointments')}
           {navBadge}
         </NavLink>
       )}
       {user?.role === 'STAFF' && (
         <NavLink to="/staff" className={navLink} onClick={closeMenu}>
           <Pic src={img.customerServiceAgent} className="h-6 w-6" />
-          Front desk
+          {t('nav.frontDesk')}
           {navBadge}
         </NavLink>
       )}
       <NavLink to="/doctors" className={navLink} end onClick={closeMenu}>
         <Pic src={img.search} className="h-6 w-6" />
-        Find a doctor
+        {t('nav.findDoctor')}
       </NavLink>
       {!user && (
         <NavLink to="/login" className={navLink} onClick={closeMenu}>
           <Pic src={img.login} className="no-tilt h-6 w-6" />
-          Log in
+          {t('common.logIn')}
         </NavLink>
       )}
     </>
@@ -299,7 +386,7 @@ export default function App() {
 
   const logo = (
     <Link to="/" className="group flex items-center gap-2" onClick={closeMenu}>
-      <span className="hidden h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-md shadow-teal-600/30 transition-transform group-hover:scale-105 sm:flex">
+      <span className="hidden h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 text-white transition-transform group-hover:scale-105 sm:flex">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
           <path className="ekg-trace" d="M2 12h4l3-8 4 16 3-8h6" />
         </svg>
@@ -312,7 +399,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-stone-100 text-stone-900 antialiased transition-colors dark:bg-stone-950 dark:text-stone-100">
-      {booting && <Splash label="Loading MediBook" leaving={leaving} />}
+      {(booting || switchingLang) && (
+        <Splash label={t('common.loading')} leaving={booting ? leaving : langLeaving} />
+      )}
       <div className="aurora" aria-hidden="true" />
       <header
         ref={headerRef}
@@ -322,7 +411,7 @@ export default function App() {
           <div className="relative flex items-center justify-between gap-x-4 sm:justify-start">
             <button
               onClick={() => setMenuOpen((v) => !v)}
-              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-label={menuOpen ? t('common.closeMenu') : t('common.openMenu')}
               aria-expanded={menuOpen}
               className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-stone-100 sm:hidden dark:hover:bg-stone-800"
             >
@@ -335,10 +424,10 @@ export default function App() {
 
             <div className="flex items-center gap-1.5 sm:hidden">
               <Notifications state={notif} />
-              <ProfileMenu onNavigate={closeMenu} compact />
+              <ProfileMenu onNavigate={closeMenu} onChangeLang={requestLangChange} compact />
             </div>
 
-            <nav className="ml-auto hidden items-center gap-1.5 sm:flex">
+            <nav className="ms-auto hidden items-center gap-1.5 sm:flex">
               {navLinks}
               <Notifications state={notif} />
               <div
@@ -346,13 +435,13 @@ export default function App() {
                   user ? 'ml-1 border-l border-stone-200 pl-3 dark:border-stone-800' : undefined
                 }
               >
-                <ProfileMenu onNavigate={closeMenu} />
+                <ProfileMenu onNavigate={closeMenu} onChangeLang={requestLangChange} />
               </div>
             </nav>
           </div>
 
           <div
-            className={`grid overflow-hidden transition-all duration-250 ease-out motion-reduce:transition-none sm:hidden ${
+            className={`grid overflow-hidden transition-all duration-300 ease-out motion-reduce:transition-none sm:hidden ${
               menuOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
             }`}
           >
@@ -380,6 +469,7 @@ export default function App() {
           <Route path="/appointments" element={<MyAppointmentsPage />} />
           <Route path="/appointments/:id" element={<AppointmentDetailPage />} />
           <Route path="/staff" element={<StaffPage />} />
+          <Route path="/account" element={<AccountPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
         </Routes>

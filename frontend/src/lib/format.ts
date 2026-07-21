@@ -9,9 +9,9 @@ export function formatMoney(amount: number): string {
 
 export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', {
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
-    hour12: false,
+    hour12: true,
     timeZone: 'UTC',
   });
 }

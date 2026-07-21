@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../lib/i18n';
 import { img } from '../lib/images';
 import Pic from './Pic';
 import { input, label } from '../lib/ui';
@@ -31,22 +32,22 @@ export function guestErrors(guest: GuestFields): Partial<Record<keyof GuestField
   const errors: Partial<Record<keyof GuestFields, string>> = {};
 
   if (!guest.fullName.trim()) {
-    errors.fullName = 'Enter the name for the appointment';
+    errors.fullName = i18n.t('guest.errName');
   } else if (guest.fullName.trim().length < 2) {
-    errors.fullName = 'That name looks too short';
+    errors.fullName = i18n.t('guest.errNameShort');
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(guest.email.trim())) {
-    errors.email = 'Enter a valid email address, like name@example.com';
+    errors.email = i18n.t('guest.errEmail');
   }
 
   const digits = guest.phone.replace(/\D/g, '');
   if (!digits) {
-    errors.phone = 'Enter your mobile number';
+    errors.phone = i18n.t('guest.errPhoneEmpty');
   } else if (digits.length !== NATIONAL_DIGITS) {
-    errors.phone = `Enter the ${NATIONAL_DIGITS} digits after ${DIAL_CODE}`;
+    errors.phone = i18n.t('guest.errPhoneDigits', { count: NATIONAL_DIGITS, code: DIAL_CODE });
   } else if (!digits.startsWith('5')) {
-    errors.phone = 'A Saudi mobile number starts with 5';
+    errors.phone = i18n.t('guest.errPhoneStart');
   }
 
   return errors;
@@ -59,16 +60,16 @@ export function isGuestValid(guest: GuestFields): boolean {
 interface GuestDetailsProps {
   value: GuestFields;
   onChange: (guest: GuestFields) => void;
+  showErrors?: boolean;
 }
 
-export default function GuestDetails({ value, onChange }: GuestDetailsProps) {
-  const [touched, setTouched] = useState<Partial<Record<keyof GuestFields, boolean>>>({});
+export default function GuestDetails({ value, onChange, showErrors = false }: GuestDetailsProps) {
+  const { t } = useTranslation();
   const errors = guestErrors(value);
 
   const set = (key: keyof GuestFields, raw: string) => onChange({ ...value, [key]: raw });
-  const touch = (key: keyof GuestFields) => setTouched((t) => ({ ...t, [key]: true }));
 
-  const fieldError = (key: keyof GuestFields) => (touched[key] ? errors[key] : undefined);
+  const fieldError = (key: keyof GuestFields) => (showErrors ? errors[key] : undefined);
 
   const errorText = (key: keyof GuestFields) => {
     const message = fieldError(key);
@@ -78,17 +79,16 @@ export default function GuestDetails({ value, onChange }: GuestDetailsProps) {
   };
 
   const ring = (key: keyof GuestFields) =>
-    fieldError(key) ? 'border-rose-400 dark:border-rose-500' : '';
+    fieldError(key) ? 'border-rose-400! dark:border-rose-500!' : '';
 
   return (
     <div className="space-y-3">
       <label className="block">
-        <span className={label}>Full name</span>
+        <span className={label}>{t('guest.fullName')}</span>
         <input
           className={`${input} ${ring('fullName')}`}
           value={value.fullName}
           onChange={(e) => set('fullName', e.target.value)}
-          onBlur={() => touch('fullName')}
           autoComplete="name"
           placeholder="Sara Al-Harbi"
         />
@@ -96,13 +96,12 @@ export default function GuestDetails({ value, onChange }: GuestDetailsProps) {
       </label>
 
       <label className="block">
-        <span className={label}>Email</span>
+        <span className={label}>{t('guest.email')}</span>
         <input
           className={`${input} ${ring('email')}`}
           type="email"
           value={value.email}
           onChange={(e) => set('email', e.target.value)}
-          onBlur={() => touch('email')}
           autoComplete="email"
           placeholder="name@example.com"
         />
@@ -110,20 +109,19 @@ export default function GuestDetails({ value, onChange }: GuestDetailsProps) {
       </label>
 
       <label className="block">
-        <span className={label}>Mobile number</span>
+        <span className={label}>{t('guest.mobile')}</span>
         <div className="flex">
-          <span className="flex shrink-0 items-center rounded-l-xl border border-r-0 border-stone-200 bg-stone-100 px-3 font-mono text-base font-medium tracking-wide text-stone-600 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300">
+          <span className="flex shrink-0 items-center rounded-s-xl border border-e-0 border-stone-200 bg-stone-100 px-3 font-mono text-base font-medium tracking-wide text-stone-600 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300">
             {DIAL_CODE}
           </span>
           <input
-            className={`${input} rounded-l-none font-mono text-base tracking-widest tabular-nums ${ring('phone')}`}
+            className={`${input} rounded-s-none font-mono text-base tracking-widest tabular-nums ${ring('phone')}`}
             type="tel"
             inputMode="numeric"
             value={formatPhone(value.phone)}
             onChange={(e) =>
               set('phone', e.target.value.replace(/\D/g, '').slice(0, NATIONAL_DIGITS))
             }
-            onBlur={() => touch('phone')}
             autoComplete="tel-national"
             placeholder="55 123 4567"
           />
@@ -133,7 +131,7 @@ export default function GuestDetails({ value, onChange }: GuestDetailsProps) {
 
       <p className="flex items-start gap-1.5 text-xs text-stone-400 dark:text-stone-500">
         <Pic src={img.information} className="mt-px h-4.5 w-4.5" />
-        We use these to confirm your visit and to reach you if anything changes.
+        {t('guest.privacyNote')}
       </p>
     </div>
   );

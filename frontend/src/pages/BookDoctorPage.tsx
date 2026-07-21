@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/style.css';
-import { api, ApiError } from '../lib/api';
+import { useTranslation } from 'react-i18next';
+import { useLocalize } from '../lib/i18n';
+import { api, errorMessage } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
-import { specialtyLabel } from '../lib/labels';
+
 import { formatDate, formatMoney, formatTime } from '../lib/format';
 import { doctorAvatar, img, serviceIcon, specialtyIcon } from '../lib/images';
 import Pic from '../components/Pic';
@@ -22,13 +24,15 @@ import GuestDetails, {
 } from '../components/GuestDetails';
 import Fade from '../components/Fade';
 import OtpDialog from '../components/OtpDialog';
+import ErrorState from '../components/ErrorState';
 import AppointmentSummary from '../components/AppointmentSummary';
 import { revealStep } from '../lib/scroll';
-import { btnGhost, btnPrimary, btnPrimaryFlat, card, errorText, label, mutedText, pageTitle } from '../lib/ui';
+import { btnAccent, btnGhost, btnPrimaryFlat, card, label, mutedText, pageTitle } from '../lib/ui';
 import type {
   Appointment,
   Clinic,
   DayAvailability,
+  Doctor,
   DoctorDetail,
   MonthAvailability,
   PatientRef,
@@ -40,22 +44,22 @@ type Payment = 'clinic' | 'online';
 const PAYMENT_OPTIONS: Array<{
   value: Payment;
   icon: string;
-  title: string;
-  hint: string;
+  titleKey: string;
+  hintKey: string;
   note: string;
 }> = [
   {
     value: 'clinic',
     icon: img.paymentMethod,
-    title: 'Cash or card at clinic',
-    hint: 'Pay at the front desk on the day',
+    titleKey: 'book.payAtClinic',
+    hintKey: 'book.payAtClinicHint',
     note: 'Pay at clinic (cash or card)',
   },
   {
     value: 'online',
     icon: img.creditCard,
-    title: 'Pay online',
-    hint: 'Card payment when you confirm',
+    titleKey: 'book.payOnline',
+    hintKey: 'book.payOnlineHint',
     note: 'Paying online',
   },
 ];
@@ -72,8 +76,11 @@ function toYM(d: Date): string {
 export default function BookDoctorPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const L = useLocalize();
   const navigate = useNavigate();
   const toast = useToast();
+  const queryClient = useQueryClient();
 
   const [month, setMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
@@ -86,6 +93,7 @@ export default function BookDoctorPage() {
   const [guestInfo, setGuestInfo] = useState<GuestFields>(DUMMY_GUEST);
   const [completedBooking, setCompletedBooking] = useState<Appointment | null>(null);
   const [otpOpen, setOtpOpen] = useState(false);
+  const [triedSubmit, setTriedSubmit] = useState(false);
   const [bookingFor, setBookingFor] = useState('');
   const isStaff = user?.role === 'STAFF';
   const isGuest = !user;
@@ -127,6 +135,11 @@ export default function BookDoctorPage() {
   const doctor = useQuery({
     queryKey: ['doctor', id],
     queryFn: () => api<DoctorDetail>(`/doctors/${id}`),
+    placeholderData: () => {
+      const list = queryClient.getQueryData<{ doctors: Doctor[] }>(['doctors']);
+      const found = list?.doctors.find((d) => d.id === id);
+      return found ? { ...found, weeklySchedule: [] } : undefined;
+    },
   });
 
   const monthAvailability = useQuery({
@@ -179,7 +192,7 @@ export default function BookDoctorPage() {
     },
     onError: (err) => {
       setOtpOpen(false);
-      toast.error(`Booking failed: ${err instanceof ApiError ? err.message : 'unexpected error'}`);
+      toast.error(errorMessage(err, t('errors.bookingFailed')));
     },
   });
 
@@ -196,7 +209,12 @@ export default function BookDoctorPage() {
     );
   if (doctor.isError)
     return (
-      <p className={errorText}>Failed to load doctor: {(doctor.error as ApiError).message}</p>
+      <ErrorState
+        title={t('book.loadFailed')}
+        error={doctor.error}
+        onRetry={() => doctor.refetch()}
+        retrying={doctor.isFetching}
+      />
     );
   const doc = doctor.data!;
   const selectedService = services.data?.services.find((s) => s.id === serviceId);
@@ -214,33 +232,32 @@ export default function BookDoctorPage() {
     setPayment(null);
   };
 
+  const bookingReady =
+    !!serviceId && !!payment && cardReady && guestReady && !(isStaff && !bookingFor);
+
+  const confirmBooking = () => {
+    if (!bookingReady) {
+      setTriedSubmit(true);
+      return;
+    }
+    setOtpOpen(true);
+  };
+
   const confirmButton = (
     <div ref={confirmRef} className="scroll-mt-20">
       <button
-        disabled={
-          !serviceId ||
-          !payment ||
-          !cardReady ||
-          !guestReady ||
-          book.isPending ||
-          (isStaff && !bookingFor)
-        }
-        onClick={() => setOtpOpen(true)}
-        className={`flex w-full items-center justify-center gap-2 ${btnPrimary}`}
+        disabled={book.isPending}
+        onClick={confirmBooking}
+        className={`flex w-full items-center justify-center gap-2 ${btnAccent}`}
       >
         {book.isPending && <Pic src={img.hourglass} className="hourglass h-5 w-5" />}
-        {book.isPending
-          ? 'Booking...'
-          : isStaff && !bookingFor
-            ? 'Select a patient to book for'
-            : !payment
-              ? 'Choose a payment method'
-              : !cardReady
-                ? 'Complete your card details'
-                : !guestReady
-                  ? 'Complete your contact details'
-                  : 'Confirm booking'}
+        {book.isPending ? t('book.booking') : t('book.confirmBooking')}
       </button>
+      {triedSubmit && !bookingReady && (
+        <p className="mt-2 text-center text-xs text-rose-600 dark:text-rose-400">
+          {t('book.completeHighlighted')}
+        </p>
+      )}
     </div>
   );
 
@@ -251,6 +268,7 @@ export default function BookDoctorPage() {
         className="mb-4 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-teal-700 transition-colors hover:bg-teal-50 dark:text-teal-400 dark:hover:bg-teal-500/10"
       >
         <svg
+          className="rtl:rotate-180"
           width="16"
           height="16"
           viewBox="0 0 24 24"
@@ -263,20 +281,20 @@ export default function BookDoctorPage() {
         >
           <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
-        Back
+        {t('common.back')}
       </button>
       <div className="mb-6 flex items-center gap-4">
         <Pic
           src={doctorAvatar(doc.name)}
           alt=""
           fit="cover"
-          className="h-20 w-20 shrink-0 rounded-full bg-teal-50 dark:bg-teal-500/10"
+          className="h-20 w-20 shrink-0 rounded-full bg-teal-50 ring-2 ring-teal-200 dark:bg-teal-500/10 dark:ring-teal-800"
         />
         <div>
-          <h1 className={pageTitle}>{doc.name}</h1>
+          <h1 className={pageTitle}>{L(doc.name, doc.nameAr)}</h1>
           <p className={`mt-0.5 flex items-center gap-1.5 ${mutedText}`}>
             <Pic src={specialtyIcon[doc.specialty]} className="h-6 w-6 shrink-0" />
-            {specialtyLabel(doc.specialty)}
+            {t(`specialty.${doc.specialty}`)}
           </p>
         </div>
       </div>
@@ -296,11 +314,11 @@ export default function BookDoctorPage() {
 
               <div className="mt-4 rounded-xl border border-teal-200/70 bg-teal-50/60 p-4 dark:border-teal-800/50 dark:bg-teal-500/5">
                 <p className="flex items-center gap-2 font-semibold">
-                  <Pic src={img.addUser} className="h-6 w-6" />
-                  Want an easier time next visit?
+                  <Pic src={img.user} className="h-6 w-6" />
+                  {t('book.upsellTitle')}
                 </p>
                 <p className={`mt-1 ${mutedText}`}>
-                  With an account your details are filled in for you, and you can see, rate and
+                  {t('book.upsellBody')}
                   cancel your appointments without calling the clinic.
                 </p>
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row">
@@ -313,11 +331,10 @@ export default function BookDoctorPage() {
                     }}
                     className={`flex items-center justify-center gap-2 sm:w-auto ${btnPrimaryFlat}`}
                   >
-                    <Pic src={img.addUser} className="no-tilt h-5 w-5" />
-                    Create an account
+                    {t('common.signUp')}
                   </Link>
                   <Link to="/login" className={`text-center ${btnGhost}`}>
-                    Log in
+                    {t('common.logIn')}
                   </Link>
                 </div>
               </div>
@@ -331,7 +348,7 @@ export default function BookDoctorPage() {
                 className={`flex items-center justify-center gap-2 sm:w-auto ${btnPrimaryFlat}`}
               >
                 <Pic src={img.calendar} className="no-tilt h-5 w-5" />
-                View my appointments
+                {t('book.viewMyAppointments')}
               </Link>
             )}
             {isStaff && (
@@ -340,11 +357,11 @@ export default function BookDoctorPage() {
                 className={`flex items-center justify-center gap-2 sm:w-auto ${btnPrimaryFlat}`}
               >
                 <Pic src={img.customerServiceAgent} className="no-tilt h-5 w-5" />
-                Back to front desk
+                {t('nav.myAppointments')}
               </Link>
             )}
             <button onClick={bookAnother} className={`text-center ${btnGhost}`}>
-              Book another visit
+              {t('book.bookAnother')}
             </button>
           </div>
         </div>
@@ -354,7 +371,7 @@ export default function BookDoctorPage() {
       <div className="grid items-start gap-6 md:grid-cols-2">
         <div className={`${card} p-4`}>
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
-            <StepBadge n={1} /> Pick a date
+            <StepBadge n={1} /> {t('book.pickDate')}
             <Pic src={img.calendar} className="h-5 w-5" />
           </h2>
           {selectedDate && !dateOpen ? (
@@ -366,10 +383,8 @@ export default function BookDoctorPage() {
                 </p>
                 <p className="text-xs text-stone-500 dark:text-stone-400">
                   {dayAvailability.data
-                    ? `${dayAvailability.data.slots.length} time ${
-                        dayAvailability.data.slots.length === 1 ? 'slot' : 'slots'
-                      } open`
-                    : 'Checking times...'}
+                    ? `${t('book.slotsOpen')}: ${dayAvailability.data.slots.length}`
+                    : t('book.checkingTimes')}
                 </p>
               </div>
               <button
@@ -383,7 +398,7 @@ export default function BookDoctorPage() {
                 }}
                 className={btnGhost}
               >
-                Change
+                {t('common.change')}
               </button>
             </div>
           ) : (
@@ -412,13 +427,13 @@ export default function BookDoctorPage() {
                 </div>
                 {monthAvailability.isFetching && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <Loading text="Checking availability..." />
+                    <Loading text={t('book.checkingAvailability')} />
                   </div>
                 )}
               </div>
               {monthAvailability.data?.days.length === 0 && !monthAvailability.isFetching && (
                 <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                  No open slots this month. Try the next one.
+                  {t('book.noSlotsThisMonth')}
                 </p>
               )}
             </>
@@ -428,7 +443,7 @@ export default function BookDoctorPage() {
         {selectedDate && (
         <div ref={timeCardRef} className={`${card} rise scroll-mt-20 p-4`}>
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
-            <StepBadge n={2} /> Pick a time
+            <StepBadge n={2} /> {t('book.pickTime')}
             <Pic src={img.clock} className="h-5 w-5" />
           </h2>
 
@@ -449,9 +464,9 @@ export default function BookDoctorPage() {
                 <div className="rise flex flex-wrap items-center gap-3 rounded-xl border border-teal-200 bg-teal-50/60 p-3 dark:border-teal-800/60 dark:bg-teal-500/5">
                   <Pic src={img.clock} className="h-8 w-8" />
                   <div className="flex-1">
-                    <p className="font-semibold">{formatTime(selectedSlot.startAt)} UTC</p>
+                    <p className="font-semibold">{formatTime(selectedSlot.startAt)}</p>
                     <p className="text-xs text-stone-500 dark:text-stone-400">
-                      {formatDate(selectedSlot.startAt)} - {selectedSlot.clinic.name}
+                      {formatDate(selectedSlot.startAt)} - {L(selectedSlot.clinic.name, selectedSlot.clinic.nameAr)}
                     </p>
                   </div>
                   <button
@@ -463,7 +478,7 @@ export default function BookDoctorPage() {
                     }}
                     className={btnGhost}
                   >
-                    Change
+                    {t('common.change')}
                   </button>
                 </div>
               ) : (
@@ -487,7 +502,7 @@ export default function BookDoctorPage() {
                   ))}
                   {dayAvailability.data.slots.length === 0 && (
                     <p className={mutedText}>
-                      No open times left on this day. It may have just filled up.
+                      {t('book.noTimesLeft')}
                     </p>
                   )}
                 </div>
@@ -501,14 +516,14 @@ export default function BookDoctorPage() {
         {selectedSlotId && isGuest && (
           <div ref={guestRef} className={`${card} rise scroll-mt-20 p-4`}>
             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
-              <StepBadge n={3} /> Your details
+              <StepBadge n={3} /> {t('book.yourDetails')}
               <Pic src={img.idCard} className="h-5 w-5" />
             </h2>
             <div className="space-y-3">
               <p className={mutedText}>
-                You are booking as a guest, so we need a way to reach you about this visit.
+                {t('book.guestNotice')}
               </p>
-              <GuestDetails value={guestInfo} onChange={setGuestInfo} />
+              <GuestDetails value={guestInfo} onChange={setGuestInfo} showErrors={triedSubmit} />
             </div>
           </div>
         )}
@@ -516,7 +531,7 @@ export default function BookDoctorPage() {
         {selectedSlotId && (
           <div ref={paymentCardRef} className={`${card} rise scroll-mt-20 p-4`}>
             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
-              <StepBadge n={isGuest ? 4 : 3} /> Visit and payment
+              <StepBadge n={isGuest ? 4 : 3} /> {t('book.visitAndPayment')}
               <Pic src={img.paymentMethod} className="h-5 w-5" />
             </h2>
 
@@ -525,54 +540,68 @@ export default function BookDoctorPage() {
                 <div>
                   <span className={`${label} flex items-center gap-1.5`}>
                     <Pic src={img.customerServiceAgent} className="h-4 w-4" />
-                    Booking for (front desk)
+                    {t('book.bookingFor')}
                   </span>
                   <Select
                     value={bookingFor}
                     onChange={setBookingFor}
-                    placeholder="Choose a patient..."
+                    placeholder={t('book.choosePatient')}
+                    invalid={triedSubmit && !bookingFor}
                     options={(patients.data?.patients ?? []).map((p) => ({
                       value: p.id,
                       label: `${p.fullName} - ${p.email}`,
                     }))}
                   />
+                  {triedSubmit && !bookingFor && (
+                    <span className="mt-1 block text-xs text-rose-600 dark:text-rose-400">
+                      {t('book.choosePatientError')}
+                    </span>
+                  )}
                 </div>
               )}
 
               <div>
-                <span className={label}>Visit type</span>
+                <span className={label}>{t('book.visitType')}</span>
                 <Select
                   value={serviceId}
                   onChange={setServiceId}
-                  placeholder="Choose a visit type..."
+                  placeholder={t('book.chooseVisitType')}
                   dropUp
+                  invalid={triedSubmit && !serviceId}
                   options={(services.data?.services ?? []).map((s) => ({
                     value: s.id,
-                    label: s.name,
+                    label: L(s.name, s.nameAr),
                   }))}
                 />
+                {triedSubmit && !serviceId && (
+                  <span className="mt-1 block text-xs text-rose-600 dark:text-rose-400">
+                    {t('book.visitTypeError')}
+                  </span>
+                )}
               </div>
 
               {selectedService && (
                 <div className="rise">
                   <span className={`${label} flex items-center gap-1.5`}>
                     <Pic src={img.cashNote} className="h-5 w-5" />
-                    Cost
+                    {t('book.cost')}
                   </span>
                   <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm dark:border-stone-700 dark:bg-stone-950">
                     <div className="flex items-center justify-between gap-3">
                       <span className="flex items-center gap-2 text-stone-500 dark:text-stone-400">
                         <Pic src={serviceIcon(selectedService.name)} className="h-5 w-5" />
-                        {selectedService.name}
+                        {L(selectedService.name, selectedService.nameAr)}
                       </span>
                       <span>{formatMoney(selectedService.price)}</span>
                     </div>
                     <div className="mt-1.5 flex items-center justify-between gap-3 text-xs text-stone-400 dark:text-stone-500">
-                      <span>Appointment length</span>
-                      <span>{selectedService.durationMinutes} min</span>
+                      <span>{t('book.appointmentLength')}</span>
+                      <span>
+                        {selectedService.durationMinutes} {t('common.minutes')}
+                      </span>
                     </div>
                     <div className="mt-2 flex items-center justify-between gap-3 border-t border-stone-200 pt-2 font-semibold dark:border-stone-800">
-                      <span>Total due at clinic</span>
+                      <span>{t('book.totalDue')}</span>
                       <span className="text-teal-700 dark:text-teal-300">
                         {formatMoney(selectedService.price)}
                       </span>
@@ -582,30 +611,36 @@ export default function BookDoctorPage() {
               )}
 
               {serviceId && (
-              <div
-                ref={paymentOptionsRef}
-                className="grid scroll-mt-20 grid-cols-1 gap-2 sm:grid-cols-2"
-              >
-                {PAYMENT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setPayment(opt.value)}
-                    className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all active:scale-[0.98] ${
-                      payment === opt.value
-                        ? 'is-active border-teal-500 bg-teal-50 ring-2 ring-teal-500/25 dark:border-teal-500 dark:bg-teal-500/10'
-                        : 'border-stone-200 bg-stone-50 hover:border-teal-300 dark:border-stone-700 dark:bg-stone-950 dark:hover:border-teal-700'
-                    }`}
-                  >
-                    <Pic src={opt.icon} className="h-9 w-9" />
-                    <span>
-                      <span className="block text-sm font-medium">{opt.title}</span>
-                      <span className="block text-xs text-stone-400 dark:text-stone-500">
-                        {opt.hint}
+              <div ref={paymentOptionsRef} className="scroll-mt-20">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {PAYMENT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setPayment(opt.value)}
+                      className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-start transition-all active:scale-[0.98] ${
+                        payment === opt.value
+                          ? 'is-active border-teal-500 bg-teal-50 ring-2 ring-teal-500/25 dark:border-teal-500 dark:bg-teal-500/10'
+                          : triedSubmit && !payment
+                            ? 'border-rose-400 bg-stone-50 hover:border-rose-500 dark:border-rose-500 dark:bg-stone-950'
+                            : 'border-stone-200 bg-stone-50 hover:border-teal-300 dark:border-stone-700 dark:bg-stone-950 dark:hover:border-teal-700'
+                      }`}
+                    >
+                      <Pic src={opt.icon} className="h-9 w-9" />
+                      <span>
+                        <span className="block text-sm font-medium">{t(opt.titleKey)}</span>
+                        <span className="block text-xs text-stone-400 dark:text-stone-500">
+                          {t(opt.hintKey)}
+                        </span>
                       </span>
-                    </span>
-                  </button>
-                ))}
+                    </button>
+                  ))}
+                </div>
+                {triedSubmit && !payment && (
+                  <span className="mt-1 block text-xs text-rose-600 dark:text-rose-400">
+                    {t('book.paymentError')}
+                  </span>
+                )}
               </div>
               )}
 
@@ -614,13 +649,14 @@ export default function BookDoctorPage() {
                   <div className="flex items-center gap-2">
                     <span className="flex items-center gap-2 text-stone-500 dark:text-stone-400">
                       <Pic src={img.calendar} className="h-6 w-6" />
-                      {formatDate(selectedSlot.startAt)} at {formatTime(selectedSlot.startAt)} UTC
+                      {formatDate(selectedSlot.startAt)} at {formatTime(selectedSlot.startAt)}
                     </span>
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-400 dark:text-stone-500">
                     <span className="flex items-center gap-1">
                       <Pic src={img.locationPin} className="h-4 w-4" />
-                      {selectedSlot.clinic.name}, {selectedSlot.clinic.city}
+                      {L(selectedSlot.clinic.name, selectedSlot.clinic.nameAr)},{' '}
+                      {L(selectedSlot.clinic.city, selectedSlot.clinic.cityAr)}
                     </span>
                     {(() => {
                       const phone = clinics.data?.clinics.find(
@@ -640,8 +676,7 @@ export default function BookDoctorPage() {
               {selectedService?.requiresApproval && (
                 <p className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-400">
                   <Pic src={img.information} className="mt-px h-4.5 w-4.5" />
-                  This visit type is reviewed by the front desk, so your booking starts as a
-                  request.
+                  {t('book.requiresApproval')}
                 </p>
               )}
 
@@ -654,9 +689,9 @@ export default function BookDoctorPage() {
                     >
                       <h3 className="flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
                         <Pic src={img.creditCard} className="h-5 w-5" />
-                        Card details
+                        {t('book.cardDetails')}
                       </h3>
-                      <CardDetails value={cardInfo} onChange={setCardInfo} />
+                      <CardDetails value={cardInfo} onChange={setCardInfo} showErrors={triedSubmit} />
                     </div>
                   </Fade>
                   {confirmButton}
@@ -673,10 +708,10 @@ export default function BookDoctorPage() {
             <div ref={cardRef} className={`${card} scroll-mt-20 p-4`}>
               <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
                 <Pic src={img.creditCard} className="h-5 w-5" />
-                Card details
+                {t('book.cardDetails')}
               </h2>
               <div className="space-y-3">
-                <CardDetails value={cardInfo} onChange={setCardInfo} />
+                <CardDetails value={cardInfo} onChange={setCardInfo} showErrors={triedSubmit} />
                 {confirmButton}
               </div>
             </div>

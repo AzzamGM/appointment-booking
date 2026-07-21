@@ -5,26 +5,26 @@ import { generateSlots } from '../src/services/slotGeneration.service';
 const prisma = new PrismaClient();
 
 const CLINICS = [
-  { code: 'RYD', name: 'MediBook Olaya', address: 'King Fahd Road, Al Olaya', city: 'Riyadh', phone: '+966 11 555 0101' },
-  { code: 'JED', name: 'MediBook Corniche', address: 'Corniche Road, Ash Shati', city: 'Jeddah', phone: '+966 12 555 0188' },
+  { code: 'RYD', name: 'MediBook Olaya', nameAr: 'ميدي بوك العليا', address: 'King Fahd Road, Al Olaya', addressAr: 'طريق الملك فهد، العليا', city: 'Riyadh', cityAr: 'الرياض', phone: '+966 11 555 0101' },
+  { code: 'JED', name: 'MediBook Corniche', nameAr: 'ميدي بوك الكورنيش', address: 'Corniche Road, Ash Shati', addressAr: 'طريق الكورنيش، الشاطئ', city: 'Jeddah', cityAr: 'جدة', phone: '+966 12 555 0188' },
 ];
 
 const DOCTORS = [
-  { name: 'Dr. Abdullah Al-Qahtani', specialty: Specialty.GENERAL_PRACTICE, clinics: ['RYD', 'JED'], bio: 'Family medicine, 12 years of practice.' },
-  { name: 'Dr. Sara Al-Harbi', specialty: Specialty.GENERAL_PRACTICE, clinics: ['JED'], bio: 'Preventive care and chronic condition management.' },
-  { name: 'Dr. Reem Al-Otaibi', specialty: Specialty.PEDIATRICS, clinics: ['RYD'], bio: 'Newborn through adolescent care.' },
-  { name: 'Dr. Noura Al-Shehri', specialty: Specialty.DERMATOLOGY, clinics: ['RYD'], bio: 'Medical dermatology and skin cancer screening.' },
-  { name: 'Dr. Khalid Al-Ghamdi', specialty: Specialty.CARDIOLOGY, clinics: ['JED'], bio: 'Non-invasive cardiology, ECG and stress testing.' },
-  { name: 'Dr. Faisal Al-Mutairi', specialty: Specialty.ORTHOPEDICS, clinics: ['RYD', 'JED'], bio: 'Sports injuries and joint health.' },
+  { name: 'Dr. Abdullah Al-Qahtani', nameAr: 'د. عبدالله القحطاني', specialty: Specialty.GENERAL_PRACTICE, clinics: ['RYD', 'JED'], bio: 'Family medicine, 12 years of practice.', bioAr: 'طب الأسرة، خبرة 12 عاماً.' },
+  { name: 'Dr. Sara Al-Harbi', nameAr: 'د. سارة الحربي', specialty: Specialty.GENERAL_PRACTICE, clinics: ['JED'], bio: 'Preventive care and chronic condition management.', bioAr: 'الرعاية الوقائية وإدارة الأمراض المزمنة.' },
+  { name: 'Dr. Reem Al-Otaibi', nameAr: 'د. ريم العتيبي', specialty: Specialty.PEDIATRICS, clinics: ['RYD'], bio: 'Newborn through adolescent care.', bioAr: 'رعاية الأطفال من الولادة حتى المراهقة.' },
+  { name: 'Dr. Noura Al-Shehri', nameAr: 'د. نورة الشهري', specialty: Specialty.DERMATOLOGY, clinics: ['RYD'], bio: 'Medical dermatology and skin cancer screening.', bioAr: 'الأمراض الجلدية والكشف المبكر عن سرطان الجلد.' },
+  { name: 'Dr. Khalid Al-Ghamdi', nameAr: 'د. خالد الغامدي', specialty: Specialty.CARDIOLOGY, clinics: ['JED'], bio: 'Non-invasive cardiology, ECG and stress testing.', bioAr: 'أمراض القلب غير التداخلية، تخطيط القلب واختبار الجهد.' },
+  { name: 'Dr. Faisal Al-Mutairi', nameAr: 'د. فيصل المطيري', specialty: Specialty.ORTHOPEDICS, clinics: ['RYD', 'JED'], bio: 'Sports injuries and joint health.', bioAr: 'الإصابات الرياضية وصحة المفاصل.' },
 ];
 
 const SERVICES = [
-  { name: 'General Consultation', durationMinutes: 30, price: 150, requiresApproval: false, specialties: [Specialty.GENERAL_PRACTICE] },
-  { name: 'Follow-up Visit', durationMinutes: 15, price: 80, requiresApproval: false, specialties: [Specialty.GENERAL_PRACTICE, Specialty.PEDIATRICS, Specialty.DERMATOLOGY, Specialty.CARDIOLOGY, Specialty.ORTHOPEDICS] },
-  { name: 'Annual Physical', durationMinutes: 45, price: 400, requiresApproval: true, specialties: [Specialty.GENERAL_PRACTICE] },
-  { name: 'Pediatric Checkup', durationMinutes: 30, price: 180, requiresApproval: false, specialties: [Specialty.PEDIATRICS] },
-  { name: 'Skin Screening', durationMinutes: 30, price: 250, requiresApproval: true, specialties: [Specialty.DERMATOLOGY] },
-  { name: 'ECG & Consultation', durationMinutes: 45, price: 450, requiresApproval: true, specialties: [Specialty.CARDIOLOGY] },
+  { name: 'General Consultation', nameAr: 'استشارة عامة', durationMinutes: 30, price: 150, requiresApproval: false, specialties: [Specialty.GENERAL_PRACTICE] },
+  { name: 'Follow-up Visit', nameAr: 'زيارة متابعة', durationMinutes: 15, price: 80, requiresApproval: false, specialties: [Specialty.GENERAL_PRACTICE, Specialty.PEDIATRICS, Specialty.DERMATOLOGY, Specialty.CARDIOLOGY, Specialty.ORTHOPEDICS] },
+  { name: 'Annual Physical', nameAr: 'الفحص السنوي الشامل', durationMinutes: 45, price: 400, requiresApproval: true, specialties: [Specialty.GENERAL_PRACTICE] },
+  { name: 'Pediatric Checkup', nameAr: 'فحص الأطفال', durationMinutes: 30, price: 180, requiresApproval: false, specialties: [Specialty.PEDIATRICS] },
+  { name: 'Skin Screening', nameAr: 'فحص الجلد', durationMinutes: 30, price: 250, requiresApproval: true, specialties: [Specialty.DERMATOLOGY] },
+  { name: 'ECG & Consultation', nameAr: 'تخطيط القلب مع استشارة', durationMinutes: 45, price: 450, requiresApproval: true, specialties: [Specialty.CARDIOLOGY] },
 ];
 
 const AVAILABILITY: Array<{ doctor: number; clinic: string; days: number[]; start: string; end: string }> = [
@@ -78,8 +78,10 @@ async function main() {
     const created = await prisma.doctor.create({
       data: {
         name: d.name,
+        nameAr: d.nameAr,
         specialty: d.specialty,
         bio: d.bio,
+        bioAr: d.bioAr,
         userId: i === 0 ? doctorUser.id : undefined,
         clinics: { create: d.clinics.map((code) => ({ clinicId: clinics.get(code)! })) },
       },

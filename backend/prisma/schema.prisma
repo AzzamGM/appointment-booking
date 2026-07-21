@@ -54,12 +54,15 @@ model User {
 }
 
 model Clinic {
-  id      String @id @default(cuid())
-  code    String @unique
-  name    String
-  address String
-  city    String
-  phone   String
+  id        String @id @default(cuid())
+  code      String @unique
+  name      String
+  nameAr    String?
+  address   String
+  addressAr String?
+  city      String
+  cityAr    String?
+  phone     String
 
   doctors        DoctorClinic[]
   availabilities Availability[]
@@ -71,8 +74,10 @@ model Doctor {
   userId    String?   @unique
   user      User?     @relation(fields: [userId], references: [id])
   name      String
+  nameAr    String?
   specialty Specialty
   bio       String?
+  bioAr     String?
 
   clinics        DoctorClinic[]
   availabilities Availability[]
@@ -95,6 +100,7 @@ model DoctorClinic {
 model Service {
   id               String      @id @default(cuid())
   name             String      @unique
+  nameAr           String?
   durationMinutes  Int
   price            Decimal     @db.Decimal(10, 2)
   requiresApproval Boolean     @default(false)

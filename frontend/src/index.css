@@ -3,14 +3,105 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+.dark {
+  --color-teal-400: #4db8b0;
+  --color-teal-500: #15a89e;
+  --color-teal-600: #15a89e;
+  --color-teal-700: #0f3a32;
+
+  --color-accent-400: #f7b09c;
+  --color-accent-500: #f59980;
+  --color-accent-600: #e07c62;
+
+  --color-success-500: #4ab885;
+  --color-success-600: #3fa676;
+}
+
 @theme {
 
   --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Bricolage Grotesque", "Outfit", ui-sans-serif, system-ui, sans-serif;
+
+  --color-stone-50: #f8fafc;
+  --color-stone-100: #f1f5f9;
+  --color-stone-200: #e5e7eb;
+  --color-stone-300: #cbd5e1;
+  --color-stone-400: #9db1ba;
+  --color-stone-500: #6b7280;
+  --color-stone-600: #4b5563;
+  --color-stone-700: #3d5168;
+  --color-stone-800: #2e4055;
+  --color-stone-900: #253545;
+  --color-stone-950: #1a2332;
+
+  --color-teal-50: #e8f4f4;
+  --color-teal-500: #0a8b8b;
+  --color-teal-600: #0a8b8b;
+  --color-teal-700: #0a7676;
+
+  --color-accent-50: #fdeee9;
+  --color-accent-100: #fbdcd3;
+  --color-accent-400: #ef8f77;
+  --color-accent-500: #e86c54;
+  --color-accent-600: #d15437;
+  --color-accent-700: #b0432a;
+
+  --color-success-50: #e8f4ee;
+  --color-success-500: #2d9e6f;
+  --color-success-600: #24845d;
+  --color-success-700: #1c6b4b;
 }
 
 html {
   -webkit-tap-highlight-color: transparent;
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+html.theme-transition,
+html.theme-transition * {
+  transition:
+    background-color 320ms linear,
+    border-color 320ms linear,
+    color 320ms linear,
+    fill 320ms linear,
+    stroke 320ms linear !important;
+  transition-delay: 0ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transition,
+  html.theme-transition * {
+    transition: none !important;
+  }
+}
+
+html[lang="ar"] {
+  --font-sans: "Tajawal", "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Tajawal", "Outfit", ui-sans-serif, system-ui, sans-serif;
+}
+html[lang="ar"] body {
+  font-family: var(--font-sans);
+}
+html[lang="ar"] .font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0;
+}
+html[lang="ar"] .tracking-tight,
+html[lang="ar"] .tracking-wide,
+html[lang="ar"] .tracking-widest {
+  letter-spacing: 0;
+}
+
+[dir="rtl"] .select-arrow {
+  background-position: left 0.75rem center;
+  padding-right: 0.875rem;
+  padding-left: 2.5rem;
+}
+[dir="rtl"] .rdp-root {
+  direction: rtl;
 }
 
 
@@ -21,13 +112,6 @@ html {
   overflow: hidden;
   pointer-events: none;
 }
-/* No `filter: blur()` here on purpose: the radial-gradient already fades to
-   transparent, so it reads as a soft glow without one. A blurred layer this
-   large, animating forever, forces every `backdrop-blur` element above it
-   (cards, header, toasts — most of the page) to re-sample and re-blur on
-   every frame, which was the actual cause of sluggish, unrelated clicks
-   elsewhere on the page (high INP from a background repaint cost, not from
-   the click handlers themselves). */
 .aurora::before,
 .aurora::after {
   content: "";
@@ -139,45 +223,36 @@ html {
   background: color-mix(in srgb, var(--color-teal-500) 25%, transparent);
 }
 
+:root {
+  --scrollbar-thumb: color-mix(in srgb, var(--color-teal-600) 32%, var(--color-stone-300));
+  --scrollbar-thumb-hover: var(--color-teal-600);
+}
+html.dark {
+  --scrollbar-thumb: color-mix(in srgb, var(--color-teal-500) 32%, var(--color-stone-700));
+  --scrollbar-thumb-hover: var(--color-teal-500);
+}
+
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-stone-300) transparent;
-}
-html.dark * {
-  scrollbar-color: var(--color-stone-600) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
-::-webkit-scrollbar-track {
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background-color: var(--color-stone-300);
+  background-color: var(--scrollbar-thumb);
   border: 2px solid transparent;
   background-clip: content-box;
   border-radius: 9999px;
+  transition: background-color 150ms ease;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-teal-500);
-}
-html.dark ::-webkit-scrollbar-thumb {
-  background-color: var(--color-stone-600);
-}
-html.dark ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-teal-500);
-}
-
-.scroll-thin {
-  scrollbar-width: thin;
-}
-.scroll-thin::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.scroll-thin::-webkit-scrollbar-thumb {
-  border-width: 1px;
+  background-color: var(--scrollbar-thumb-hover);
 }
 
 
@@ -366,4 +441,11 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 }
 .rdp-day_button {
   transition: background-color 0.15s ease, color 0.15s ease;
+}
+.rdp-day:not(.rdp-disabled):not(.rdp-outside) .rdp-day_button:hover {
+  background: var(--rdp-accent-background-color);
+  border-radius: 9999px;
+}
+.rdp-day[data-selected="true"] .rdp-day_button:hover {
+  background: var(--rdp-accent-color);
 }

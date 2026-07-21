@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { img } from '../lib/images';
 import Pic from './Pic';
 import { btnGhost, card } from '../lib/ui';
@@ -14,6 +15,7 @@ interface OtpDialogProps {
 }
 
 export default function OtpDialog({ phone, busy = false, onVerified, onCancel }: OtpDialogProps) {
+  const { t } = useTranslation();
   const [digits, setDigits] = useState<string[]>(Array(LENGTH).fill(''));
   const [seconds, setSeconds] = useState(RESEND_SECONDS);
   const boxes = useRef<Array<HTMLInputElement | null>>([]);
@@ -79,7 +81,7 @@ export default function OtpDialog({ phone, busy = false, onVerified, onCancel }:
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Confirm your mobile number"
+      aria-label={t('otp.title')}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
       <div
@@ -89,17 +91,17 @@ export default function OtpDialog({ phone, busy = false, onVerified, onCancel }:
 
       <div className={`${card} drop relative w-full max-w-sm p-6 text-center`}>
         <Pic src={img.otp} className="mx-auto h-14 w-14" />
-        <h2 className="mt-3 font-display text-lg font-bold">Confirm your number</h2>
+        <h2 className="mt-3 font-display text-lg font-bold">{t('otp.title')}</h2>
         <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
           {phone ? (
             <>
-              We sent a {LENGTH} digit code to{' '}
+              {t('otp.sentTo', { count: LENGTH })}{' '}
               <span className="font-mono font-semibold text-stone-700 dark:text-stone-200">
                 {phone}
               </span>
             </>
           ) : (
-            `We sent a ${LENGTH} digit code to the mobile number on your account.`
+            t('otp.sentToAccount', { count: LENGTH })
           )}
         </p>
 
@@ -129,13 +131,13 @@ export default function OtpDialog({ phone, busy = false, onVerified, onCancel }:
 
         <p className="mt-3 text-xs text-stone-400 dark:text-stone-500">
           {seconds > 0 ? (
-            `Didn't get it? You can resend in ${seconds}s`
+            t('otp.resendIn', { seconds })
           ) : (
             <button
               onClick={() => setSeconds(RESEND_SECONDS)}
               className="font-medium text-teal-700 underline underline-offset-2 hover:no-underline dark:text-teal-400"
             >
-              Resend code
+              {t('otp.resend')}
             </button>
           )}
         </p>
@@ -144,18 +146,18 @@ export default function OtpDialog({ phone, busy = false, onVerified, onCancel }:
           {busy ? (
             <p className="flex items-center justify-center gap-2 text-sm font-medium text-teal-700 dark:text-teal-300">
               <Pic src={img.hourglass} className="hourglass h-5 w-5" />
-              Verifying and booking...
+              {t('otp.verifying')}
             </p>
           ) : (
             <button onClick={onCancel} className={btnGhost}>
-              Cancel
+              {t('common.cancel')}
             </button>
           )}
         </div>
 
-        <p className="mt-4 flex items-start gap-1.5 text-left text-xs text-stone-400 dark:text-stone-500">
+        <p className="mt-4 flex items-start gap-1.5 text-start text-xs text-stone-400 dark:text-stone-500">
           <Pic src={img.information} className="mt-px h-4.5 w-4.5 shrink-0" />
-          Demo only. No message is sent and any {LENGTH} digits will be accepted.
+          {t('otp.demoNote', { count: LENGTH })}
         </p>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { formatDate, formatTime } from '../lib/format';
 import { img, statusIcon } from '../lib/images';
 import type { BookingNotification, BookingNotificationsState } from '../lib/notifications';
@@ -19,16 +20,17 @@ function notificationText(n: BookingNotification, isStaff: boolean): { title: st
   if (n.kind === 'pending') {
     return {
       title: `${a.patient.fullName} requested ${a.service.name}`,
-      subtitle: `${a.doctor.name} - ${formatDate(a.startAt)} at ${formatTime(a.startAt)} UTC`,
+      subtitle: `${a.doctor.name} - ${formatDate(a.startAt)} at ${formatTime(a.startAt)}`,
     };
   }
   return {
     title: `${a.service.name} confirmed with ${a.doctor.name}`,
-    subtitle: `${formatDate(a.startAt)} at ${formatTime(a.startAt)} UTC`,
+    subtitle: `${formatDate(a.startAt)} at ${formatTime(a.startAt)}`,
   };
 }
 
 export default function Notifications({ state }: { state: BookingNotificationsState }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -86,7 +88,7 @@ export default function Notifications({ state }: { state: BookingNotificationsSt
       >
         <Pic src={img.notificationBell} alt="Notifications" className="h-6 w-6" />
         {count > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+          <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
             {count}
           </span>
         )}
@@ -95,19 +97,19 @@ export default function Notifications({ state }: { state: BookingNotificationsSt
       {open && (
         <div
           role="menu"
-          className="drop absolute right-0 z-30 mt-2 w-80 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-900"
+          className="drop absolute end-0 z-30 mt-2 w-80 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-900"
         >
           <p className="border-b border-stone-100 px-3.5 py-2.5 text-sm font-semibold dark:border-stone-800">
-            Notifications
+            {t('notif.title')}
           </p>
 
-          <div className="scroll-thin max-h-80 overflow-y-auto p-1.5">
-            {isLoading && <p className={`${mutedText} px-2.5 py-3 text-center`}>Loading...</p>}
+          <div className="max-h-80 overflow-y-auto p-1.5">
+            {isLoading && <p className={`${mutedText} px-2.5 py-3 text-center`}>{t('notif.loading')}</p>}
 
             {!isLoading && items.length === 0 && (
               <div className="flex flex-col items-center gap-2 px-2.5 py-6 text-center">
                 <Pic src={img.notificationBell} className="no-tilt h-8 w-8 opacity-50" />
-                <p className={mutedText}>No updates on upcoming or current bookings.</p>
+                <p className={mutedText}>{t('notif.empty')}</p>
               </div>
             )}
 
@@ -117,7 +119,7 @@ export default function Notifications({ state }: { state: BookingNotificationsSt
                 <button
                   key={n.id}
                   onClick={() => goToAppointment(n)}
-                  className="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-stone-100 dark:hover:bg-stone-800"
+                  className="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-start transition-colors hover:bg-stone-100 dark:hover:bg-stone-800"
                 >
                   <Pic
                     src={n.kind === 'current' ? img.checkUp : statusIcon[n.appointment.status]}
@@ -140,7 +142,7 @@ export default function Notifications({ state }: { state: BookingNotificationsSt
               onClick={goTo}
               className="block w-full border-t border-stone-100 px-3.5 py-2.5 text-center text-sm font-medium text-teal-700 transition-colors hover:bg-stone-50 dark:border-stone-800 dark:text-teal-400 dark:hover:bg-stone-800"
             >
-              {isStaff ? 'View front desk' : 'View my appointments'}
+              {isStaff ? t('notif.viewFrontDesk') : t('notif.viewMine')}
             </button>
           )}
         </div>

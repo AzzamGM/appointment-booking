@@ -13,8 +13,11 @@ clinicsRouter.get(
         id: c.id,
         code: c.code,
         name: c.name,
+        nameAr: c.nameAr,
         address: c.address,
+        addressAr: c.addressAr,
         city: c.city,
+        cityAr: c.cityAr,
         phone: c.phone,
       })),
     });
@@ -35,6 +38,7 @@ servicesRouter.get(
       services: filtered.map((s) => ({
         id: s.id,
         name: s.name,
+        nameAr: s.nameAr,
         durationMinutes: s.durationMinutes,
         price: Number(s.price),
         requiresApproval: s.requiresApproval,

@@ -1,18 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { api, ApiError } from '../lib/api';
-import { SPECIALTIES, specialtyLabel } from '../lib/labels';
+import { useTranslation } from 'react-i18next';
+import { useLocalize } from '../lib/i18n';
+import { api } from '../lib/api';
+import { SPECIALTIES } from '../lib/labels';
 import { doctorAvatar, img, specialtyIcon } from '../lib/images';
 import Pic from '../components/Pic';
 import Loading from '../components/Loading';
 import StepBadge from '../components/StepBadge';
+import ErrorState from '../components/ErrorState';
 import { revealStep } from '../lib/scroll';
-import { btnGhost, btnPrimary, card, errorText, mutedText, pageTitle } from '../lib/ui';
+import { btnAccent, btnGhost, card, mutedText, pageTitle } from '../lib/ui';
 import type { Clinic, Doctor, Specialty } from '../types';
 
 export default function BookingPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const L = useLocalize();
   const [clinicCode, setClinicCode] = useState<string | null>(null);
   const [specialty, setSpecialty] = useState<Specialty | null>(null);
   const specialtyStepRef = useRef<HTMLElement>(null);
@@ -63,20 +68,25 @@ export default function BookingPage() {
 
   return (
     <div>
-      <h1 className={pageTitle}>Book an appointment</h1>
+      <h1 className={pageTitle}>{t('booking.title')}</h1>
       <p className={`mt-1 ${mutedText}`}>
-        Pick a branch and what you need, then choose the doctor you'd like to see.
+        {t('booking.subtitle')}
       </p>
 
       {doctors.isError && (
-        <p className={`mt-4 ${errorText}`}>
-          Failed to load doctors: {(doctors.error as ApiError).message}
-        </p>
+        <div className="mt-4">
+          <ErrorState
+            title={t('booking.loadFailed')}
+            error={doctors.error}
+            onRetry={() => doctors.refetch()}
+            retrying={doctors.isFetching}
+          />
+        </div>
       )}
 
       <section className="mt-6">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
-          <StepBadge n={1} /> Pick a location
+          <StepBadge n={1} /> {t('booking.step1')}
           <Pic src={img.locationPin} className="h-5 w-5" />
         </h2>
 
@@ -85,10 +95,10 @@ export default function BookingPage() {
             <Pic src={img.mapLocation} className="h-10 w-10" />
             <div className="flex-1">
               <p className="font-semibold">
-                {selectedClinic.name}, {selectedClinic.city}
+                {L(selectedClinic.name, selectedClinic.nameAr)}, {L(selectedClinic.city, selectedClinic.cityAr)}
               </p>
               <p className="text-xs text-stone-400 dark:text-stone-500">
-                {atClinic.length} {atClinic.length === 1 ? 'doctor' : 'doctors'} at this branch
+                {t('booking.doctorsAtBranch')}: {atClinic.length}
               </p>
             </div>
             <button
@@ -98,11 +108,11 @@ export default function BookingPage() {
               }}
               className={`flex items-center gap-1.5 ${btnGhost}`}
             >
-              Change
+              {t('common.change')}
             </button>
           </div>
         ) : clinics.isLoading ? (
-          <Loading text="Loading locations..." />
+          <Loading text={t('booking.loadingLocations')} />
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {(clinics.data?.clinics ?? []).map((c) => {
@@ -113,16 +123,16 @@ export default function BookingPage() {
                 <button
                   key={c.code}
                   onClick={() => chooseClinic(c.code)}
-                  className={`${card} rise flex items-center gap-3 p-4 text-left hover:-translate-y-0.5`}
+                  className={`${card} rise flex items-center gap-3 p-4 text-start hover:-translate-y-0.5`}
                 >
                   <Pic src={img.mapLocation} className="h-12 w-12 shrink-0" />
                   <span className="min-w-0">
-                    <span className="block font-semibold">{c.name}</span>
+                    <span className="block font-semibold">{L(c.name, c.nameAr)}</span>
                     <span className="block text-xs text-stone-500 dark:text-stone-400">
-                      {c.address}, {c.city}
+                      {L(c.address, c.addressAr)}, {L(c.city, c.cityAr)}
                     </span>
                     <span className="block text-xs text-stone-400 dark:text-stone-500">
-                      {count} {count === 1 ? 'doctor' : 'doctors'}
+                      {count} {t(count === 1 ? 'common.doctor' : 'common.doctors')}
                     </span>
                   </span>
                 </button>
@@ -135,24 +145,24 @@ export default function BookingPage() {
       {clinicCode && (
       <section ref={specialtyStepRef} className="rise mt-6 scroll-mt-20">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
-          <StepBadge n={2} /> Choose a specialty
+          <StepBadge n={2} /> {t('booking.step2')}
         </h2>
 
         {specialty ? (
           <div className={`${card} flex flex-wrap items-center gap-3 p-4`}>
             <Pic src={specialtyIcon[specialty]} className="h-10 w-10" />
             <div className="flex-1">
-              <p className="font-semibold">{specialtyLabel(specialty)}</p>
+              <p className="font-semibold">{t(`specialty.${specialty}`)}</p>
               <p className="text-xs text-stone-400 dark:text-stone-500">
-                {shortlist.length} {shortlist.length === 1 ? 'doctor' : 'doctors'} available
+                {t('booking.doctorsAvailable')}: {shortlist.length}
               </p>
             </div>
             <button onClick={() => setSpecialty(null)} className={btnGhost}>
-              Change
+              {t('common.change')}
             </button>
           </div>
         ) : doctors.isLoading ? (
-          <Loading text="Loading specialties..." />
+          <Loading text={t('booking.loadingSpecialties')} />
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {SPECIALTIES.map((s) => {
@@ -168,9 +178,11 @@ export default function BookingPage() {
                   }`}
                 >
                   <Pic src={specialtyIcon[s]} className="h-14 w-14" />
-                  <span className="text-sm font-semibold">{specialtyLabel(s)}</span>
+                  <span className="text-sm font-semibold">{t(`specialty.${s}`)}</span>
                   <span className="text-xs text-stone-400 dark:text-stone-500">
-                    {empty ? 'None available' : `${count} ${count === 1 ? 'doctor' : 'doctors'}`}
+                    {empty
+                      ? t('booking.noneAvailable')
+                      : `${count} ${t(count === 1 ? 'common.doctor' : 'common.doctors')}`}
                   </span>
                 </button>
               );
@@ -183,7 +195,7 @@ export default function BookingPage() {
       {specialty && (
       <section ref={doctorStepRef} className="rise mt-6 scroll-mt-20">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
-          <StepBadge n={3} /> Choose a doctor
+          <StepBadge n={3} /> {t('booking.step3')}
         </h2>
 
         <div className="space-y-3">
@@ -197,26 +209,26 @@ export default function BookingPage() {
                 src={doctorAvatar(d.name)}
                 alt=""
                 fit="cover"
-                className="h-16 w-16 shrink-0 rounded-full bg-teal-50 transition-transform group-hover:scale-105 dark:bg-teal-500/10"
+                className="h-16 w-16 shrink-0 rounded-full bg-teal-50 ring-2 ring-teal-200 transition-transform group-hover:scale-105 dark:bg-teal-500/10 dark:ring-teal-800"
               />
               <div className="min-w-0 flex-1">
-                <p className="text-lg font-semibold">{d.name}</p>
-                {d.bio && <p className={`mt-0.5 ${mutedText}`}>{d.bio}</p>}
+                <p className="text-lg font-semibold">{L(d.name, d.nameAr)}</p>
+                {d.bio && <p className={`mt-0.5 ${mutedText}`}>{L(d.bio, d.bioAr)}</p>}
                 <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-stone-400 dark:text-stone-500">
                   {d.clinics.map((c) => (
                     <span key={c.code} className="flex items-center gap-1">
                       <Pic src={img.locationPin} className="h-4 w-4" />
-                      {c.name}, {c.city}
+                      {L(c.name, c.nameAr)}, {L(c.city, c.cityAr)}
                     </span>
                   ))}
                 </p>
               </div>
               <button
                 onClick={() => navigate(`/doctors/${d.id}/book`)}
-                className={`flex w-full items-center justify-center gap-2 sm:w-auto ${btnPrimary}`}
+                className={`flex w-full items-center justify-center gap-2 sm:w-auto ${btnAccent}`}
               >
                 <Pic src={img.addCalendar} className="h-5 w-5" />
-                Pick a time
+                {t('booking.pickTime')}
               </button>
             </div>
           ))}
@@ -225,13 +237,13 @@ export default function BookingPage() {
       )}
 
       <p className="mt-6 text-center text-sm text-stone-500 dark:text-stone-400">
-        Looking for someone specific?{' '}
+        {t('booking.lookingForSomeone')}{' '}
         <Link
           to="/doctors"
           className="inline-flex items-center gap-1 align-middle font-medium text-teal-700 underline underline-offset-2 hover:no-underline dark:text-teal-400"
         >
           <Pic src={img.search} className="h-5 w-5" />
-          Browse all doctors
+          {t('booking.browseAll')}
         </Link>
       </p>
     </div>

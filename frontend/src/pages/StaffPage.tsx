@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, ApiError } from '../lib/api';
+import { useTranslation } from 'react-i18next';
+import { useLocalize } from '../lib/i18n';
+import { api, errorMessage } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
-import { specialtyLabel, statusStyle } from '../lib/labels';
+import { statusStyle } from '../lib/labels';
 import { formatDate, formatTime } from '../lib/format';
 import { img, statusIcon } from '../lib/images';
 import Pic from '../components/Pic';
@@ -14,10 +16,10 @@ import type { Appointment, AuditEntry } from '../types';
 
 type Action = 'confirm' | 'check-in' | 'cancel';
 
-const ACTION_DONE: Record<Action, string> = {
-  confirm: 'Appointment confirmed.',
-  'check-in': 'Patient checked in.',
-  cancel: 'Appointment cancelled.',
+const ACTION_KEY: Record<Action, string> = {
+  confirm: 'staff.confirmed',
+  'check-in': 'staff.checkedIn',
+  cancel: 'appointments.cancelled',
 };
 
 function auditIcon(action: string): string {
@@ -30,6 +32,8 @@ function auditIcon(action: string): string {
 
 export default function StaffPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const L = useLocalize();
   const queryClient = useQueryClient();
   const toast = useToast();
   const [showLog, setShowLog] = useState(false);
@@ -63,17 +67,17 @@ export default function StaffPage() {
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ['staff-appointments'] });
       queryClient.invalidateQueries({ queryKey: ['audit'] });
-      toast.success(ACTION_DONE[vars.action]);
+      toast.success(t(ACTION_KEY[vars.action]));
     },
     onError: (err) => {
-      toast.error(err instanceof ApiError ? err.message : 'Action failed.');
+      toast.error(errorMessage(err, t('errors.actionFailed')));
     },
   });
 
   if (user?.role !== 'STAFF') {
     return (
       <p className="text-sm text-stone-600 dark:text-stone-300">
-        This page is for front-desk staff. Log in as staff@medibook.test to try it.
+        {t('staff.staffOnly')}
       </p>
     );
   }
@@ -111,19 +115,19 @@ export default function StaffPage() {
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
         <h1 className={`flex items-center gap-2.5 ${pageTitle}`}>
           <Pic src={img.customerServiceAgent} className="h-10 w-10" />
-          Front desk
+          {t('staff.title')}
         </h1>
         <div className="flex flex-wrap gap-2">
           <Link to="/" className={`flex items-center gap-1.5 ${btnGhost}`}>
             <Pic src={img.new} className="h-5 w-5" />
-            New booking
+            {t('staff.newBooking')}
           </Link>
           <button
             className={`flex items-center gap-1.5 ${btnGhost}`}
             onClick={() => setShowLog((v) => !v)}
           >
             <Pic src={img.information} className="h-5 w-5" />
-            {showLog ? 'Hide activity log' : 'Activity log'}
+            {showLog ? t('staff.hideActivityLog') : t('staff.activityLog')}
           </button>
           <button
             className={`flex items-center gap-1.5 ${btnGhost}`}
@@ -134,21 +138,21 @@ export default function StaffPage() {
             }
           >
             <Pic src={img.settings} className="h-5 w-5" />
-            Clinic settings
+            {t('staff.clinicSettings')}
           </button>
         </div>
       </div>
-      <p className={`mb-4 ${mutedText}`}>Upcoming appointments across all clinics.</p>
+      <p className={`mb-4 ${mutedText}`}>{t('staff.subtitle')}</p>
 
       {showLog && (
         <div className={`${card} rise mb-4 p-4`}>
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
             <Pic src={img.information} className="h-5 w-5" />
-            Recent activity
+            {t('staff.recentActivity')}
           </h2>
-          {audit.isLoading && <Loading text="Loading activity..." />}
+          {audit.isLoading && <Loading text={t('staff.loadingActivity')} />}
           {audit.data?.entries.length === 0 && (
-            <p className={mutedText}>No activity recorded yet.</p>
+            <p className={mutedText}>{t('staff.noActivity')}</p>
           )}
           <ul className="max-h-80 space-y-1.5 overflow-y-auto">
             {audit.data?.entries.map((e) => (
@@ -174,14 +178,14 @@ export default function StaffPage() {
         <div className="rise mb-4 flex items-center gap-3 rounded-xl border border-amber-200/70 bg-amber-50/70 px-4 py-2.5 dark:border-amber-800/40 dark:bg-amber-500/5">
           <Pic src={img.notificationBell} className="h-7 w-7" />
           <p className="text-sm text-amber-900 dark:text-amber-200">
-            {pending} booking request{pending === 1 ? '' : 's'} waiting for review.
+            {t('staff.pendingRequests')}: {pending}
           </p>
         </div>
       )}
 
       {appointments.isLoading && (
         <div className="space-y-2">
-          <Loading text="Loading the schedule..." />
+          <Loading text={t('staff.loadingSchedule')} />
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className={`${card} p-3`}>
               <div className="h-5 w-3/4 animate-pulse rounded bg-stone-200 dark:bg-stone-800" />
@@ -210,7 +214,7 @@ export default function StaffPage() {
                   className={`flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${statusStyle[a.status]}`}
                 >
                   <Pic src={statusIcon[a.status]} className="h-4.5 w-4.5" />
-                  {a.status.replace('_', ' ')}
+                  {t(`statusShort.${a.status}`)}
                 </span>
                 <span className="font-mono text-stone-400 dark:text-stone-500">{a.reference}</span>
                 <span className="font-medium">{a.patient.fullName}</span>
@@ -224,22 +228,23 @@ export default function StaffPage() {
                   </span>
                 )}
                 <span className="text-stone-500 dark:text-stone-400">
-                  {a.service.name} - {a.doctor.name} ({specialtyLabel(a.doctor.specialty)})
+                  {L(a.service.name, a.service.nameAr)} - {L(a.doctor.name, a.doctor.nameAr)} (
+                  {t(`specialty.${a.doctor.specialty}`)})
                 </span>
                 <span className="flex items-center gap-1.5 text-stone-500 dark:text-stone-400">
                   <Pic src={img.clock} className="h-4.5 w-4.5" />
-                  {formatDate(a.startAt)} {formatTime(a.startAt)} UTC - {a.clinic.code}
+                  {formatDate(a.startAt)} {formatTime(a.startAt)} - {a.clinic.code}
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {a.status === 'REQUESTED' &&
-                  actionButton(a, 'confirm', img.approved, 'Confirm', 'Confirming...')}
+                  actionButton(a, 'confirm', img.approved, t('staff.confirm'), t('staff.confirming'))}
                 {a.status === 'CONFIRMED' &&
-                  actionButton(a, 'check-in', img.idCard, 'Check in', 'Checking in...')}
+                  actionButton(a, 'check-in', img.idCard, t('staff.checkIn'), t('staff.checkingIn'))}
                 {a.status === 'CHECKED_IN' && (
                   <span className="flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500">
                     <Pic src={img.checkUp} className="h-5 w-5" />
-                    With the doctor
+                    {t('staff.withDoctor')}
                   </span>
                 )}
                 {(a.status === 'REQUESTED' || a.status === 'CONFIRMED') &&
@@ -248,7 +253,7 @@ export default function StaffPage() {
                     'cancel',
                     a.status === 'REQUESTED' ? img.unapproved : img.delete,
                     a.status === 'REQUESTED' ? 'Decline' : 'Cancel',
-                    'Cancelling...',
+                    t('appointments.cancelling'),
                     true,
                   )}
               </div>

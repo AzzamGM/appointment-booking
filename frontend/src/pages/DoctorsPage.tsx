@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { api, ApiError } from '../lib/api';
-import { SPECIALTIES, specialtyLabel } from '../lib/labels';
+import { useTranslation } from 'react-i18next';
+import { useLocalize } from '../lib/i18n';
+import { api } from '../lib/api';
+import { SPECIALTIES } from '../lib/labels';
 import { doctorAvatar, img, specialtyIcon } from '../lib/images';
 import Pic from '../components/Pic';
 import Loading from '../components/Loading';
 import Select from '../components/Select';
+import ErrorState from '../components/ErrorState';
 import {
   btnGhost,
-  btnPrimary,
+  btnAccent,
   card,
-  errorText,
   inputWithIcon,
   label,
   mutedText,
@@ -19,17 +21,18 @@ import {
 } from '../lib/ui';
 import type { Clinic, Doctor, Specialty } from '../types';
 
-const HEALTH_TIPS: Array<{ icon: string; text: string }> = [
-  { icon: img.virus, text: 'Flu season is coming — screenings are available at every clinic.' },
-  { icon: img.lungs, text: 'Breathe easy: lung function checks take under 15 minutes.' },
-  { icon: img.physicalCheck, text: 'A blood pressure check is free with any visit.' },
-  { icon: img.medicine, text: 'Bring your current medication list to your appointment.' },
-  { icon: img.injection, text: 'Flu shots are walk-in at both clinics, no appointment needed.' },
-  { icon: img.xray, text: 'On-site imaging: most X-rays are read the same day.' },
-  { icon: img.weighingScale, text: 'Ask the front desk for a weight and BMI check at your visit.' },
+const HEALTH_TIPS: Array<{ icon: string; key: string }> = [
+  { icon: img.virus, key: 'tips.t1' },
+  { icon: img.lungs, key: 'tips.t2' },
+  { icon: img.physicalCheck, key: 'tips.t3' },
+  { icon: img.medicine, key: 'tips.t4' },
+  { icon: img.injection, key: 'tips.t5' },
+  { icon: img.xray, key: 'tips.t6' },
+  { icon: img.weighingScale, key: 'tips.t7' },
 ];
 
 function HealthTips() {
+  const { t } = useTranslation();
   const [i, setI] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setI((v) => (v + 1) % HEALTH_TIPS.length), 6000);
@@ -40,7 +43,7 @@ function HealthTips() {
     <div className="mt-4 flex items-center gap-3 rounded-xl border border-teal-200/60 bg-teal-50/60 px-4 py-2.5 dark:border-teal-800/40 dark:bg-teal-500/5">
       <Pic key={i} src={tip.icon} className="rise h-7 w-7" />
       <p key={`t${i}`} className="rise text-sm text-teal-900 dark:text-teal-200">
-        {tip.text}
+        {t(tip.key)}
       </p>
     </div>
   );
@@ -61,6 +64,8 @@ function DoctorSkeleton() {
 
 export default function DoctorsPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const L = useLocalize();
   const [specialty, setSpecialty] = useState<Specialty | ''>('');
   const [clinic, setClinic] = useState('');
   const [q, setQ] = useState('');
@@ -92,9 +97,9 @@ export default function DoctorsPage() {
 
   return (
     <div>
-      <h1 className={pageTitle}>Find a doctor</h1>
+      <h1 className={pageTitle}>{t('doctors.title')}</h1>
       <p className={`mt-1 ${mutedText}`}>
-        Browse the clinic network and book a visit in a couple of clicks.
+        {t('doctors.subtitle')}
       </p>
 
       <HealthTips />
@@ -102,46 +107,46 @@ export default function DoctorsPage() {
       <div className={`${card} relative z-20 mt-4 p-4 sm:p-5`}>
         <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
           <Pic src={img.filter} className="h-6 w-6" />
-          Filter doctors
+          {t('doctors.filter')}
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div>
-            <span className={label}>Specialty</span>
+            <span className={label}>{t('doctors.specialty')}</span>
             <Select
               value={specialty}
               onChange={(v) => setSpecialty(v as Specialty | '')}
               options={[
-                { value: '', label: 'All specialties' },
-                ...SPECIALTIES.map((s) => ({ value: s, label: specialtyLabel(s) })),
+                { value: '', label: t('doctors.allSpecialties') },
+                ...SPECIALTIES.map((s) => ({ value: s, label: t(`specialty.${s}`) })),
               ]}
             />
           </div>
           <div>
-            <span className={label}>Clinic</span>
+            <span className={label}>{t('doctors.clinic')}</span>
             <Select
               value={clinic}
               onChange={setClinic}
               options={[
-                { value: '', label: 'All clinics' },
+                { value: '', label: t('doctors.allClinics') },
                 ...(clinics.data?.clinics ?? []).map((c) => ({
                   value: c.code,
-                  label: `${c.name} (${c.city})`,
+                  label: `${L(c.name, c.nameAr)} (${L(c.city, c.cityAr)})`,
                 })),
               ]}
             />
           </div>
           <label className="block">
-            <span className={label}>Name</span>
+            <span className={label}>{t('doctors.name')}</span>
             <div className="relative">
               <Pic
                 src={img.search}
-                className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 opacity-60"
+                className="pointer-events-none absolute start-3 top-1/2 h-5 w-5 -translate-y-1/2 opacity-60"
               />
               <input
                 className={inputWithIcon}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search by name..."
+                placeholder={t('doctors.searchByName')}
               />
             </div>
           </label>
@@ -151,7 +156,7 @@ export default function DoctorsPage() {
       <div className="mt-6 space-y-3">
         {doctors.isLoading && (
           <>
-            <Loading text="Finding doctors..." inline />
+            <Loading text={t('doctors.finding')} inline />
             <DoctorSkeleton />
             <DoctorSkeleton />
             <DoctorSkeleton />
@@ -159,26 +164,28 @@ export default function DoctorsPage() {
         )}
 
         {doctors.isError && (
-          <p className={errorText}>
-            Failed to load doctors: {(doctors.error as ApiError).message}
-          </p>
+          <ErrorState
+            title={t('doctors.loadFailed')}
+            error={doctors.error}
+            onRetry={() => doctors.refetch()}
+            retrying={doctors.isFetching}
+          />
         )}
 
         {doctors.data && doctors.data.doctors.length > 0 && (
           <p className="text-xs text-stone-400 dark:text-stone-500">
-            {doctors.data.doctors.length}{' '}
-            {doctors.data.doctors.length === 1 ? 'doctor' : 'doctors'}
-            {hasFilters ? ' match your filters' : ' available'}
+            {hasFilters ? t('doctors.countMatch') : t('doctors.countAvailable')}:{' '}
+            {doctors.data.doctors.length}
           </p>
         )}
 
         {doctors.data?.doctors.length === 0 && (
           <div className={`${card} flex flex-col items-center gap-3 p-8 text-center`}>
             <Pic src={img.questionMark} className="h-12 w-12 opacity-80" />
-            <p className={mutedText}>No doctors match those filters.</p>
+            <p className={mutedText}>{t('doctors.noMatch')}</p>
             {hasFilters && (
               <button onClick={clearFilters} className={btnGhost}>
-                Clear filters
+                {t('doctors.clearFilters')}
               </button>
             )}
           </div>
@@ -187,38 +194,38 @@ export default function DoctorsPage() {
         {doctors.data?.doctors.map((d, i) => (
           <div
             key={d.id}
-            className={`${card} rise group flex flex-wrap items-center gap-4 p-4 hover:border-teal-300 hover:shadow-md sm:p-5 dark:hover:border-teal-700`}
+            className={`${card} rise group flex flex-wrap items-center gap-4 p-4 hover:border-teal-300 sm:p-5 dark:hover:border-teal-700`}
             style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
           >
             <Pic
               src={doctorAvatar(d.name)}
               alt=""
               fit="cover"
-              className="h-16 w-16 shrink-0 rounded-full bg-teal-50 transition-transform group-hover:scale-105 dark:bg-teal-500/10"
+              className="h-16 w-16 shrink-0 rounded-full bg-teal-50 ring-2 ring-teal-200 transition-transform group-hover:scale-105 dark:bg-teal-500/10 dark:ring-teal-800"
             />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="text-lg font-semibold">{d.name}</span>
+                <span className="text-lg font-semibold">{L(d.name, d.nameAr)}</span>
                 <span className="flex items-center gap-1.5 rounded-md bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
                   <Pic src={specialtyIcon[d.specialty]} className="h-4.5 w-4.5" />
-                  {specialtyLabel(d.specialty)}
+                  {t(`specialty.${d.specialty}`)}
                 </span>
               </div>
-              {d.bio && <p className={`mt-0.5 ${mutedText}`}>{d.bio}</p>}
+              {d.bio && <p className={`mt-0.5 ${mutedText}`}>{L(d.bio, d.bioAr)}</p>}
               <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-stone-400 dark:text-stone-500">
                 {d.clinics.map((c) => (
                   <span key={c.code} className="flex items-center gap-1">
                     <Pic src={img.locationPin} className="h-4 w-4" />
-                    {c.name}, {c.city}
+                    {L(c.name, c.nameAr)}, {L(c.city, c.cityAr)}
                   </span>
                 ))}
               </p>
             </div>
             <button
               onClick={() => navigate(`/doctors/${d.id}/book`)}
-              className={`w-full sm:w-auto ${btnPrimary}`}
+              className={`w-full sm:w-auto ${btnAccent}`}
             >
-              Book appointment
+              {t('doctors.bookAppointment')}
             </button>
           </div>
         ))}

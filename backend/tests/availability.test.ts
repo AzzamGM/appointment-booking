@@ -78,7 +78,9 @@ describe('GET /api/doctors/:id/availability?date=', () => {
     expect(res.body.slots[0].clinic).toEqual({
       code: clinic.code,
       name: clinic.name,
+      nameAr: clinic.nameAr,
       city: clinic.city,
+      cityAr: clinic.cityAr,
     });
   });
 

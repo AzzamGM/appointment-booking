@@ -31,20 +31,25 @@ export interface AuthResponse {
 export interface ClinicRef {
   code: string;
   name: string;
+  nameAr?: string | null;
   city: string;
+  cityAr?: string | null;
 }
 
 export interface Clinic extends ClinicRef {
   id: string;
   address: string;
+  addressAr?: string | null;
   phone: string;
 }
 
 export interface Doctor {
   id: string;
   name: string;
+  nameAr?: string | null;
   specialty: Specialty;
   bio: string | null;
+  bioAr?: string | null;
   clinics: ClinicRef[];
 }
 
@@ -60,6 +65,7 @@ export interface DoctorDetail extends Doctor {
 export interface Service {
   id: string;
   name: string;
+  nameAr?: string | null;
   durationMinutes: number;
   price: number;
   requiresApproval: boolean;
@@ -97,11 +103,12 @@ export interface Appointment {
   status: AppointmentStatus;
   startAt: string;
   endAt: string;
-  doctor: { id: string; name: string; specialty: Specialty };
+  doctor: { id: string; name: string; nameAr?: string | null; specialty: Specialty };
   clinic: ClinicRef;
   service: {
     id: string;
     name: string;
+    nameAr?: string | null;
     durationMinutes: number;
     price: number;
     requiresApproval: boolean;

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface SelectOption {
   value: string;
@@ -11,6 +12,7 @@ interface SelectProps {
   onChange: (value: string) => void;
   placeholder?: string;
   dropUp?: boolean;
+  invalid?: boolean;
 }
 
 export default function Select({
@@ -19,7 +21,9 @@ export default function Select({
   onChange,
   placeholder = 'Select...',
   dropUp = false,
+  invalid = false,
 }: SelectProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(-1);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -88,7 +92,11 @@ export default function Select({
         aria-expanded={open}
         onClick={() => (open ? setOpen(false) : openMenu())}
         onKeyDown={onKeyDown}
-        className="flex w-full items-center justify-between gap-2 rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-left text-sm text-stone-900 transition-colors focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-100 dark:focus:border-teal-400 dark:focus:ring-teal-400/25"
+        className={`flex w-full items-center justify-between gap-2 rounded-xl border bg-white px-3.5 py-2.5 text-start text-sm text-stone-900 transition-colors focus:outline-none focus:ring-2 dark:bg-stone-950 dark:text-stone-100 ${
+          invalid
+            ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/25 dark:border-rose-500'
+            : 'border-stone-300 focus:border-teal-500 focus:ring-teal-500/25 dark:border-stone-700 dark:focus:border-teal-400 dark:focus:ring-teal-400/25'
+        }`}
       >
         <span className={selected ? '' : 'text-stone-400 dark:text-stone-500'}>
           {selected ? selected.label : placeholder}
@@ -125,7 +133,7 @@ export default function Select({
                   aria-selected={isSelected}
                   onClick={() => choose(o.value)}
                   onMouseEnter={() => setHighlight(i)}
-                  className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                  className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-start text-sm transition-colors ${
                     i === highlight ? 'bg-stone-100 dark:bg-stone-800' : ''
                   } ${
                     isSelected
@@ -143,7 +151,7 @@ export default function Select({
               );
             })}
             {options.length === 0 && (
-              <p className="px-3 py-2 text-sm text-stone-400 dark:text-stone-500">No options</p>
+              <p className="px-3 py-2 text-sm text-stone-400 dark:text-stone-500">{t('appointments.noOptions')}</p>
             )}
           </div>
         </div>

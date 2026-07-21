@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, ApiError } from '../lib/api';
+import { useTranslation } from 'react-i18next';
+import { api, errorMessage } from '../lib/api';
 import { useToast } from '../lib/toast';
 import { img } from '../lib/images';
 import Pic from './Pic';
@@ -28,6 +29,7 @@ export default function PrescribeForm({
   appointment: Appointment;
   onDone: () => void;
 }) {
+  const { t } = useTranslation();
   const toast = useToast();
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<PrescriptionDraft>(DEFAULT_DRAFT);
@@ -51,7 +53,7 @@ export default function PrescribeForm({
       onDone();
     },
     onError: (err) => {
-      toast.error(err instanceof ApiError ? err.message : 'Prescribing failed.');
+      toast.error(errorMessage(err, t('prescribe.failed')));
     },
   });
 
@@ -61,7 +63,7 @@ export default function PrescribeForm({
     <div className="rise mt-3 w-full space-y-3 rounded-xl bg-stone-50 p-3 dark:bg-stone-950">
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="block">
-          <span className={label}>Medication</span>
+          <span className={label}>{t('prescribe.medication')}</span>
           <input
             className={input}
             value={draft.medication}
@@ -70,7 +72,7 @@ export default function PrescribeForm({
           />
         </label>
         <label className="block">
-          <span className={label}>Dosage</span>
+          <span className={label}>{t('prescribe.dosage')}</span>
           <input
             className={input}
             value={draft.dosage}
@@ -79,7 +81,7 @@ export default function PrescribeForm({
           />
         </label>
         <label className="block">
-          <span className={label}>Frequency</span>
+          <span className={label}>{t('prescribe.frequency')}</span>
           <input
             className={input}
             value={draft.frequency}
@@ -89,7 +91,7 @@ export default function PrescribeForm({
         </label>
       </div>
       <label className="block">
-        <span className={label}>Instructions (optional)</span>
+        <span className={label}>{t('prescribe.instructions')}</span>
         <input
           className={input}
           value={draft.instructions}
@@ -107,10 +109,10 @@ export default function PrescribeForm({
             src={prescribe.isPending ? img.hourglass : img.save}
             className={`h-5 w-5 ${prescribe.isPending ? 'hourglass' : ''}`}
           />
-          {prescribe.isPending ? 'Saving...' : 'Save prescription'}
+          {prescribe.isPending ? t('prescribe.saving') : t('prescribe.save')}
         </button>
         <button className={btnGhost} onClick={onDone}>
-          Close
+          {t('prescribe.close')}
         </button>
       </div>
     </div>

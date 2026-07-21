@@ -53,7 +53,13 @@ export async function dayDetail(doctorId: string, date: string) {
       id: s.id,
       startAt: s.startAt.toISOString(),
       endAt: s.endAt.toISOString(),
-      clinic: { code: s.clinic.code, name: s.clinic.name, city: s.clinic.city },
+      clinic: {
+        code: s.clinic.code,
+        name: s.clinic.name,
+        nameAr: s.clinic.nameAr,
+        city: s.clinic.city,
+        cityAr: s.clinic.cityAr,
+      },
     })),
   };
 }

@@ -14,9 +14,7 @@ export default function Splash({
         leaving ? 'splash-leaving' : ''
       }`}
     >
-      <div className="aurora" aria-hidden="true" />
-
-      <div className="splash-mark flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-xl shadow-teal-600/30">
+      <div className="splash-mark flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white">
         <svg
           width="38"
           height="38"

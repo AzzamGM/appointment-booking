@@ -9,6 +9,7 @@ import {
   patientsRouter,
 } from './routes/appointments.routes';
 import { clinicsRouter, servicesRouter } from './routes/meta.routes';
+import { usersRouter } from './routes/user.routes';
 import { errorHandler, notFoundHandler } from './middleware/errors';
 
 export function createApp() {
@@ -26,6 +27,7 @@ export function createApp() {
   app.use('/api/appointments', guestAppointmentsRouter);
   app.use('/api/appointments', appointmentsRouter);
   app.use('/api/patients', patientsRouter);
+  app.use('/api/users', usersRouter);
   app.use('/api/audit', auditRouter);
   app.use('/api/clinics', clinicsRouter);
   app.use('/api/services', servicesRouter);

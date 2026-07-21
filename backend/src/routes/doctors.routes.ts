@@ -53,12 +53,16 @@ doctorsRouter.get(
       doctors: doctors.map((d) => ({
         id: d.id,
         name: d.name,
+        nameAr: d.nameAr,
         specialty: d.specialty,
         bio: d.bio,
+        bioAr: d.bioAr,
         clinics: d.clinics.map((dc) => ({
           code: dc.clinic.code,
           name: dc.clinic.name,
+          nameAr: dc.clinic.nameAr,
           city: dc.clinic.city,
+          cityAr: dc.clinic.cityAr,
         })),
       })),
     });
@@ -101,12 +105,16 @@ doctorsRouter.get(
     res.json({
       id: doctor.id,
       name: doctor.name,
+      nameAr: doctor.nameAr,
       specialty: doctor.specialty,
       bio: doctor.bio,
+      bioAr: doctor.bioAr,
       clinics: doctor.clinics.map((dc) => ({
         code: dc.clinic.code,
         name: dc.clinic.name,
+        nameAr: dc.clinic.nameAr,
         city: dc.clinic.city,
+        cityAr: dc.clinic.cityAr,
       })),
       weeklySchedule: doctor.availabilities.map((a) => ({
         dayOfWeek: a.dayOfWeek,

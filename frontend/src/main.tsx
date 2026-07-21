@@ -7,6 +7,7 @@ import { ThemeProvider } from './lib/theme';
 import { SettingsProvider } from './lib/settings';
 import { ToastProvider } from './lib/toast';
 import App from './App';
+import './lib/i18n';
 import './index.css';
 
 const queryClient = new QueryClient({

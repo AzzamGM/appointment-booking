@@ -30,7 +30,7 @@ export const statusLabel: Record<AppointmentStatus, string> = {
 
 export const statusStyle: Record<AppointmentStatus, string> = {
   REQUESTED: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
-  CONFIRMED: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300',
+  CONFIRMED: 'bg-success-50 text-success-700 dark:bg-success-500/15 dark:text-success-500',
   CHECKED_IN: 'bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300',
   COMPLETED: 'bg-stone-200 text-stone-700 dark:bg-stone-700/50 dark:text-stone-300',
   CANCELLED: 'bg-stone-200 text-stone-500 dark:bg-stone-700/50 dark:text-stone-400',
