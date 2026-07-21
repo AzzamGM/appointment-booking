@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { img } from '../lib/images';
 import Pic from './Pic';
+import { toAsciiDigits } from '../lib/format';
 import { btnGhost, card } from '../lib/ui';
 
 const LENGTH = 4;
@@ -49,7 +50,7 @@ export default function OtpDialog({ phone, busy = false, onVerified, onCancel }:
   }, [seconds]);
 
   const write = (index: number, raw: string) => {
-    const typed = raw.replace(/\D/g, '');
+    const typed = toAsciiDigits(raw).replace(/\D/g, '');
     if (!typed) return;
 
     setDigits((prev) => {
@@ -105,13 +106,14 @@ export default function OtpDialog({ phone, busy = false, onVerified, onCancel }:
           )}
         </p>
 
-        <div className="mt-5 flex justify-center gap-2.5">
+        <div dir="ltr" style={{ direction: 'ltr' }} className="mt-5 flex flex-row justify-center gap-2.5">
           {digits.map((digit, i) => (
             <input
               key={i}
               ref={(el) => {
                 boxes.current[i] = el;
               }}
+              dir="ltr"
               value={digit}
               inputMode="numeric"
               autoComplete="one-time-code"

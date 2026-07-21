@@ -123,6 +123,10 @@ export default function BookDoctorPage() {
   }, [serviceId]);
 
   useEffect(() => {
+    if (isStaff && serviceId && !payment) setPayment('clinic');
+  }, [isStaff, serviceId, payment]);
+
+  useEffect(() => {
     if (payment) revealStep(payment === 'online' ? cardRef : confirmRef);
   }, [payment]);
 
@@ -436,7 +440,7 @@ export default function BookDoctorPage() {
                 )}
                 {noSlotsThisMonth && (
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center">
-                    <p className="text-sm font-medium text-stone-500 dark:text-stone-400">
+                    <p className="rounded-xl bg-stone-950/70 px-4 py-2.5 text-sm font-medium text-white shadow-lg backdrop-blur-sm">
                       {t('book.noSlotsThisMonth')}
                     </p>
                   </div>
@@ -633,28 +637,35 @@ export default function BookDoctorPage() {
               {serviceId && (
               <div ref={paymentOptionsRef} className="scroll-mt-20">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {PAYMENT_OPTIONS.map((opt) => (
+                  {PAYMENT_OPTIONS.map((opt) => {
+                    // Front desk settles in person, so online payment is not offered.
+                    const locked = isStaff && opt.value === 'online';
+                    return (
                     <button
                       key={opt.value}
                       type="button"
+                      disabled={locked}
                       onClick={() => setPayment(opt.value)}
-                      className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-start transition-all active:scale-[0.98] ${
-                        payment === opt.value
-                          ? 'is-active border-teal-500 bg-teal-50 ring-2 ring-teal-500/25 dark:border-teal-500 dark:bg-teal-500/10'
-                          : triedSubmit && !payment
-                            ? 'border-rose-400 bg-stone-50 hover:border-rose-500 dark:border-rose-500 dark:bg-stone-950'
-                            : 'border-stone-200 bg-stone-50 hover:border-teal-300 dark:border-stone-700 dark:bg-stone-950 dark:hover:border-teal-700'
+                      className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-start transition-all ${
+                        locked
+                          ? 'cursor-not-allowed border-stone-200 bg-stone-50 opacity-50 dark:border-stone-700 dark:bg-stone-950'
+                          : payment === opt.value
+                            ? 'is-active border-teal-500 bg-teal-50 ring-2 ring-teal-500/25 active:scale-[0.98] dark:border-teal-500 dark:bg-teal-500/10'
+                            : triedSubmit && !payment
+                              ? 'border-rose-400 bg-stone-50 hover:border-rose-500 active:scale-[0.98] dark:border-rose-500 dark:bg-stone-950'
+                              : 'border-stone-200 bg-stone-50 hover:border-teal-300 active:scale-[0.98] dark:border-stone-700 dark:bg-stone-950 dark:hover:border-teal-700'
                       }`}
                     >
                       <Pic src={opt.icon} className="h-9 w-9" />
                       <span>
                         <span className="block text-sm font-medium">{t(opt.titleKey)}</span>
                         <span className="block text-xs text-stone-400 dark:text-stone-500">
-                          {t(opt.hintKey)}
+                          {locked ? t('book.payOnlineStaffLocked') : t(opt.hintKey)}
                         </span>
                       </span>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
                 {triedSubmit && !payment && (
                   <span className="mt-1 block text-xs text-rose-600 dark:text-rose-400">

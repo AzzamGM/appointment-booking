@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth';
 import { errorMessage } from '../lib/api';
 import { useToast } from '../lib/toast';
 import { saveGender, img, type Gender } from '../lib/images';
+import { toAsciiDigits } from '../lib/format';
 import { DIAL_CODE } from '../components/GuestDetails';
 import Pic from '../components/Pic';
 import Select from '../components/Select';
@@ -90,6 +91,7 @@ export default function SignupPage() {
         <label className="block">
           <span className={label}>{t('signup.email')}</span>
           <input
+            dir="ltr"
             className={`${input} ${err('email') ? invalidBorder : ''}`}
             type="email"
             value={email}
@@ -101,7 +103,7 @@ export default function SignupPage() {
         </label>
         <label className="block">
           <span className={label}>{t('signup.mobileOptional')}</span>
-          <div className="flex">
+          <div dir="ltr" className="flex">
             <span className="flex shrink-0 items-center rounded-s-xl border border-e-0 border-stone-200 bg-stone-100 px-3 font-mono text-base font-medium tracking-wide text-stone-600 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300">
               {DIAL_CODE}
             </span>
@@ -112,7 +114,7 @@ export default function SignupPage() {
               type="tel"
               inputMode="numeric"
               value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
+              onChange={(e) => setPhone(toAsciiDigits(e.target.value).replace(/\D/g, '').slice(0, 9))}
               autoComplete="tel-national"
               placeholder="55 123 4567"
             />
@@ -121,7 +123,7 @@ export default function SignupPage() {
         </label>
         <label className="block">
           <span className={label}>{t('signup.password')}</span>
-          <div className="relative">
+          <div dir="ltr" className="relative">
             <Pic
               src={img.password}
               className="pointer-events-none absolute start-3 top-1/2 h-5 w-5 -translate-y-1/2 opacity-60"

@@ -64,7 +64,7 @@ export default function LoginPage() {
       <form onSubmit={onSubmit} noValidate className={`${card} rise space-y-4 p-5`}>
         <label className="block">
           <span className={label}>{t('login.email')}</span>
-          <div className="relative">
+          <div dir="ltr" className="relative">
             <Pic
               src={img.user}
               className="pointer-events-none absolute start-3 top-1/2 h-5 w-5 -translate-y-1/2 opacity-60"
@@ -81,7 +81,7 @@ export default function LoginPage() {
         </label>
         <label className="block">
           <span className={label}>{t('login.password')}</span>
-          <div className="relative">
+          <div dir="ltr" className="relative">
             <Pic
               src={img.password}
               className="pointer-events-none absolute start-3 top-1/2 h-5 w-5 -translate-y-1/2 opacity-60"

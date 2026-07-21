@@ -6,6 +6,7 @@ import { api, errorMessage } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
 import { img } from '../lib/images';
+import { toAsciiDigits } from '../lib/format';
 import Pic from '../components/Pic';
 import Divider from '../components/Divider';
 import {
@@ -166,7 +167,7 @@ export default function AccountPage() {
 
         <label className="block">
           <span className={label}>{t('account.phone')}</span>
-          <div className="relative">
+          <div dir="ltr" className="relative">
             <Pic
               src={img.phoneCall}
               className="pointer-events-none absolute start-3 top-1/2 h-5 w-5 -translate-y-1/2 opacity-60"
@@ -175,7 +176,7 @@ export default function AccountPage() {
               className={`${inputWithIcon} ${err('phone') ? invalidBorder : ''}`}
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(toAsciiDigits(e.target.value))}
               autoComplete="tel"
               placeholder="+966 55 123 4567"
             />
@@ -193,7 +194,7 @@ export default function AccountPage() {
           <div className="space-y-3">
             <label className="block">
               <span className={label}>{t('account.currentPassword')}</span>
-              <div className="relative">
+              <div dir="ltr" className="relative">
                 <input
                   className={`${input} pe-16 ${err('currentPassword') ? invalidBorder : ''}`}
                   type={showCurrent ? 'text' : 'password'}
@@ -217,7 +218,7 @@ export default function AccountPage() {
             </label>
             <label className="block">
               <span className={label}>{t('account.newPassword')}</span>
-              <div className="relative">
+              <div dir="ltr" className="relative">
                 <input
                   className={`${input} pe-16 ${err('newPassword') ? invalidBorder : ''}`}
                   type={showNew ? 'text' : 'password'}

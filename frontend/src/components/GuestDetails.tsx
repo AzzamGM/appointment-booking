@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import i18n from '../lib/i18n';
 import { img } from '../lib/images';
+import { toAsciiDigits } from '../lib/format';
 import Pic from './Pic';
 import { input, label } from '../lib/ui';
 
@@ -108,6 +109,7 @@ export default function GuestDetails({
         <label className="block">
           <span className={label}>{t('guest.email')}</span>
           <input
+            dir="ltr"
             className={`${input} ${ring('email')}`}
             type="email"
             value={value.email}
@@ -121,7 +123,7 @@ export default function GuestDetails({
 
       <label className="block">
         <span className={label}>{t('guest.mobile')}</span>
-        <div className="flex">
+        <div dir="ltr" className="flex">
           <span className="flex shrink-0 items-center rounded-s-xl border border-e-0 border-stone-200 bg-stone-100 px-3 font-mono text-base font-medium tracking-wide text-stone-600 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300">
             {DIAL_CODE}
           </span>
@@ -131,7 +133,7 @@ export default function GuestDetails({
             inputMode="numeric"
             value={formatPhone(value.phone)}
             onChange={(e) =>
-              set('phone', e.target.value.replace(/\D/g, '').slice(0, NATIONAL_DIGITS))
+              set('phone', toAsciiDigits(e.target.value).replace(/\D/g, '').slice(0, NATIONAL_DIGITS))
             }
             autoComplete="tel-national"
             placeholder="55 123 4567"

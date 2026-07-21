@@ -112,6 +112,7 @@ const en = {
     payAtClinicHint: 'Pay at the front desk on the day',
     payOnline: 'Pay online',
     payOnlineHint: 'Card payment when you confirm',
+    payOnlineStaffLocked: 'Not available for front desk bookings',
     requiresApproval:
       'This visit type is reviewed by the front desk, so your booking starts as a request.',
     confirmBooking: 'Confirm booking',
@@ -547,6 +548,7 @@ const ar: typeof en = {
     payAtClinicHint: 'ادفع في الاستقبال يوم الموعد',
     payOnline: 'الدفع عبر الإنترنت',
     payOnlineHint: 'الدفع بالبطاقة عند التأكيد',
+    payOnlineStaffLocked: 'غير متاح لحجوزات الاستقبال',
     requiresApproval: 'تخضع هذه الزيارة لمراجعة الاستقبال، لذا يبدأ حجزك كطلب.',
     confirmBooking: 'تأكيد الحجز',
     booking: 'جارٍ الحجز...',

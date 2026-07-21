@@ -4,6 +4,15 @@ function dateLocale(): string {
   return i18n.language === 'ar' ? 'ar' : 'en-US';
 }
 
+// Arabic-Indic (U+0660-0669) and Persian (U+06F0-06F9) digits typed on a
+// localized keypad must still register as their ASCII equivalents.
+export function toAsciiDigits(raw: string): string {
+  return raw.replace(/[٠-٩۰-۹]/g, (d) => {
+    const code = d.charCodeAt(0);
+    return String(code - (code >= 0x06f0 ? 0x06f0 : 0x0660));
+  });
+}
+
 export function formatMoney(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
