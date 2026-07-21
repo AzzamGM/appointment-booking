@@ -376,6 +376,34 @@ html.dark {
 }
 
 
+.drawer-panel {
+  animation: drawer-in 0.28s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+[dir="rtl"] .drawer-panel {
+  animation-name: drawer-in-rtl;
+}
+@keyframes drawer-in-rtl {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer-panel {
+    animation: fade-in 0.2s ease both;
+  }
+}
+
 @keyframes drop {
   from {
     opacity: 0;

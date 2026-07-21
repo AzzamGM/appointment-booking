@@ -7,6 +7,7 @@ import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
 import { img } from '../lib/images';
 import Pic from '../components/Pic';
+import Divider from '../components/Divider';
 import {
   btnDanger,
   btnGhost,
@@ -182,11 +183,13 @@ export default function AccountPage() {
           {err('phone') && <span className={fieldError}>{err('phone')}</span>}
         </label>
 
-        <div className="border-t border-stone-100 pt-4 dark:border-stone-800">
-          <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
-            <Pic src={img.password} className="h-5 w-5" />
-            {t('account.changePassword')}
-          </p>
+        <div>
+          <Divider align="start" className="mb-3 mt-1">
+            <span className="flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
+              <Pic src={img.password} className="h-5 w-5" />
+              {t('account.changePassword')}
+            </span>
+          </Divider>
           <div className="space-y-3">
             <label className="block">
               <span className={label}>{t('account.currentPassword')}</span>

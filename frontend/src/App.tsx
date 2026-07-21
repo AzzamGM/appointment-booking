@@ -8,11 +8,12 @@ import { useTranslation } from 'react-i18next';
 import { LANG_SWITCH_MS, useLang, type Lang } from './lib/i18n';
 import { useSettings } from './lib/settings';
 import { img, userAvatar } from './lib/images';
-import { useBookingNotifications } from './lib/notifications';
+import { useActiveAppointmentCount, useBookingNotifications } from './lib/notifications';
 import Pic from './components/Pic';
 import Switch from './components/Switch';
 import Splash from './components/Splash';
 import Notifications from './components/Notifications';
+import Drawer from './components/Drawer';
 import WakeBanner from './components/WakeBanner';
 import BookingPage from './pages/BookingPage';
 import DoctorSchedulePage from './pages/DoctorSchedulePage';
@@ -38,83 +39,26 @@ const preloadImage = (src: string) =>
     image.src = src;
   });
 
-function ProfileMenu({
-  onNavigate,
+function SettingsPanel({
   onChangeLang,
-  compact = false,
+  onClose,
+  onNavigate,
 }: {
-  onNavigate: () => void;
   onChangeLang: (next: Lang) => void;
-  compact?: boolean;
+  onClose: () => void;
+  onNavigate: () => void;
 }) {
   const { user, logout } = useAuth();
   const { theme, toggle } = useTheme();
   const { notifications, setNotifications } = useSettings();
   const { t } = useTranslation();
   const { lang } = useLang();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (e: MouseEvent | TouchEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', onPointer);
-    document.addEventListener('touchstart', onPointer);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onPointer);
-      document.removeEventListener('touchstart', onPointer);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
 
   const row = 'flex items-center gap-2.5 rounded-lg px-2.5 py-2';
-  const iconOnly = compact || !user;
+  const setOpen = (_: boolean) => onClose();
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        title={user ? t('common.accountSettings') : t('common.settings')}
-        aria-label={user ? t('common.accountSettings') : t('common.settings')}
-        className={`group flex items-center rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 ${
-          iconOnly ? 'h-9 w-9 justify-center' : 'w-full gap-2 px-1.5 py-1'
-        }`}
-      >
-        {user ? (
-          <>
-            <Pic
-              src={userAvatar(user.email, user.role)}
-              alt=""
-              fit="cover"
-              className="no-tilt h-6 w-6 rounded-full bg-stone-100 ring-1 ring-stone-200 transition-colors group-hover:ring-teal-400 dark:bg-stone-800 dark:ring-stone-700 dark:group-hover:ring-teal-400"
-            />
-            {!compact && (
-              <>
-                <span className="text-sm text-stone-600 transition-colors group-hover:text-stone-900 dark:text-stone-300 dark:group-hover:text-white">
-                  {user.fullName}
-                </span>
-                <Pic src={img.settings} className="h-6 w-6 opacity-70" />
-              </>
-            )}
-          </>
-        ) : (
-          <Pic src={img.settings} className="h-6 w-6" />
-        )}
-      </button>
-
-      {open && (
-        <div
-          role="menu"
-          className="drop absolute end-0 z-30 mt-2 w-72 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-900"
-        >
+    <>
           {user && (
             <div className="flex items-center gap-3 border-b border-stone-100 p-3 dark:border-stone-800">
               <Pic
@@ -211,7 +155,7 @@ function ProfileMenu({
                 }}
                 className={`${row} text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800`}
               >
-                <Pic src={img.userInfo} className="h-6 w-6" />
+                <Pic src={img.accountSettings} className="h-6 w-6" />
                 {t('common.accountSettings')}
               </Link>
               <button
@@ -228,6 +172,108 @@ function ProfileMenu({
               </button>
             </div>
           )}
+    </>
+  );
+}
+
+function ProfileMenu({
+  onNavigate,
+  onChangeLang,
+  compact = false,
+  drawer = false,
+}: {
+  onNavigate: () => void;
+  onChangeLang: (next: Lang) => void;
+  compact?: boolean;
+  drawer?: boolean;
+}) {
+  const { user } = useAuth();
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open || drawer) return;
+    const onPointer = (e: MouseEvent | TouchEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('touchstart', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('touchstart', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open, drawer]);
+
+  const iconOnly = compact || !user;
+
+  const trigger = (
+    <button
+      onClick={() => setOpen((v) => !v)}
+      aria-haspopup={drawer ? 'dialog' : 'menu'}
+      aria-expanded={open}
+      title={user ? t('common.accountSettings') : t('common.settings')}
+      aria-label={user ? t('common.accountSettings') : t('common.settings')}
+      className={`group flex items-center rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 ${
+        iconOnly ? 'h-9 w-9 justify-center' : 'w-full gap-2 px-1.5 py-1'
+      }`}
+    >
+      {user ? (
+        <>
+          <Pic
+            src={userAvatar(user.email, user.role)}
+            alt=""
+            fit="cover"
+            className="no-tilt h-6 w-6 rounded-full bg-stone-100 ring-1 ring-stone-200 transition-colors group-hover:ring-teal-400 dark:bg-stone-800 dark:ring-stone-700 dark:group-hover:ring-teal-400"
+          />
+          {!compact && (
+            <>
+              <span className="text-sm text-stone-600 transition-colors group-hover:text-stone-900 dark:text-stone-300 dark:group-hover:text-white">
+                {user.fullName}
+              </span>
+              <Pic src={img.settings} className="h-6 w-6 opacity-70" />
+            </>
+          )}
+        </>
+      ) : (
+        <Pic src={img.settings} className="h-6 w-6" />
+      )}
+    </button>
+  );
+
+  const panel = (
+    <SettingsPanel
+      onChangeLang={onChangeLang}
+      onClose={() => setOpen(false)}
+      onNavigate={onNavigate}
+    />
+  );
+
+  if (drawer) {
+    return (
+      <>
+        {trigger}
+        <Drawer open={open} title={t('common.settings')} onClose={() => setOpen(false)}>
+          {panel}
+        </Drawer>
+      </>
+    );
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      {trigger}
+      {open && (
+        <div
+          role="menu"
+          className="drop absolute end-0 z-30 mt-2 w-72 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-900"
+        >
+          {panel}
         </div>
       )}
     </div>
@@ -247,6 +293,7 @@ export default function App() {
   const headerRef = useRef<HTMLElement>(null);
   const queryClient = useQueryClient();
   const notif = useBookingNotifications();
+  const activeCount = useActiveAppointmentCount();
 
   const requestLangChange = (next: Lang) => {
     if (next === lang || switchingLang) return;
@@ -338,9 +385,12 @@ export default function App() {
 
   const closeMenu = () => setMenuOpen(false);
 
-  const navBadge = notif.count > 0 && (
-    <span className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
-      {notif.count}
+  const navBadge = activeCount > 0 && (
+    <span
+      title={t('nav.activeCount', { count: activeCount })}
+      className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white"
+    >
+      {activeCount}
     </span>
   );
 
@@ -356,6 +406,7 @@ export default function App() {
         <NavLink to="/" className={navLink} end onClick={closeMenu}>
           <Pic src={img.checkUp} className="h-6 w-6" />
           {t('nav.mySchedule')}
+          {navBadge}
         </NavLink>
       )}
       {user?.role === 'PATIENT' && (
@@ -425,8 +476,8 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-1.5 sm:hidden">
-              <Notifications state={notif} />
-              <ProfileMenu onNavigate={closeMenu} onChangeLang={requestLangChange} compact />
+              <Notifications state={notif} drawer />
+              <ProfileMenu onNavigate={closeMenu} onChangeLang={requestLangChange} compact drawer />
             </div>
 
             <nav className="ms-auto hidden items-center gap-1.5 sm:flex">

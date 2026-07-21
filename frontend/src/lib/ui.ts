@@ -24,6 +24,9 @@ export const btnAccent =
 export const btnGhost =
   'rounded-xl border border-stone-300 px-3.5 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-100 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 dark:border-stone-700 dark:text-stone-300 dark:hover:bg-stone-800';
 
+export const btnGhostActive =
+  'rounded-xl border border-teal-300 bg-teal-50 px-3.5 py-2 text-sm font-medium text-teal-800 transition-colors hover:bg-teal-100 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 dark:border-teal-700 dark:bg-teal-500/10 dark:text-teal-200 dark:hover:bg-teal-500/20';
+
 export const btnDanger =
   'rounded-xl border border-rose-200 px-3.5 py-2 text-sm font-medium text-rose-700 transition-colors hover:bg-rose-50 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 dark:border-rose-900/60 dark:text-rose-400 dark:hover:bg-rose-950/40';
 

@@ -1,5 +1,6 @@
 import type { AppointmentStatus, Specialty } from '../types';
 
+import accountSettings from '../assets/account_settings.svg';
 import addCalendar from '../assets/add-calendar.svg';
 import addUser from '../assets/add-user.svg';
 import approved from '../assets/approved.svg';
@@ -17,6 +18,7 @@ import customerServiceAgent from '../assets/customer-service-agent.svg';
 import danger from '../assets/danger.svg';
 import deleteIcon from '../assets/delete.svg';
 import disableBell from '../assets/disable-bell.svg';
+import edit from '../assets/edit.svg';
 import email from '../assets/email.svg';
 import errorNetwork from '../assets/network_error.svg';
 import errorGeneral from '../assets/general_error.svg';
@@ -32,6 +34,7 @@ import home from '../assets/home.svg';
 import hourglass from '../assets/hourglass.svg';
 import idCard from '../assets/id-card.svg';
 import information from '../assets/information.svg';
+import inProgress from '../assets/in_progress.svg';
 import injection from '../assets/injection.svg';
 import locationPin from '../assets/location-pin.svg';
 import login from '../assets/login.svg';
@@ -69,11 +72,13 @@ import unhealthy from '../assets/unhealthy.svg';
 import unhide from '../assets/unhide.svg';
 import user from '../assets/user.svg';
 import userInfo from '../assets/user_info.svg';
+import view from '../assets/view.svg';
 import virus from '../assets/virus.svg';
 import weighingScale from '../assets/weighing-scale.svg';
 import xray from '../assets/x-ray.svg';
 
 export const img = {
+  accountSettings,
   addCalendar,
   addUser,
   approved,
@@ -91,6 +96,7 @@ export const img = {
   danger,
   delete: deleteIcon,
   disableBell,
+  edit,
   email,
   errorNetwork,
   errorGeneral,
@@ -106,6 +112,7 @@ export const img = {
   hourglass,
   idCard,
   information,
+  inProgress,
   injection,
   locationPin,
   login,
@@ -143,6 +150,7 @@ export const img = {
   unhide,
   user,
   userInfo,
+  view,
   virus,
   weighingScale,
   xray,
@@ -152,6 +160,7 @@ export const statusIcon: Record<AppointmentStatus, string> = {
   REQUESTED: requested,
   CONFIRMED: confirmed,
   CHECKED_IN: idCard,
+  IN_PROGRESS: inProgress,
   COMPLETED: approved,
   CANCELLED: cancelled,
   NO_SHOW: noShow,
@@ -201,7 +210,7 @@ function emailHash(email: string): number {
 }
 
 export function userAvatar(email: string, role: string): string {
-  if (role === 'STAFF') return emailHash(email) % 2 === 0 ? maleNurse : femaleNurse;
+  if (role === 'STAFF') return customerServiceAgent;
   if (role === 'DOCTOR') return doctorAvatar('');
   if (role !== 'PATIENT') return user;
 

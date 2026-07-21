@@ -28,7 +28,10 @@ const formatPhone = (raw: string) => {
   return `${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5, 9)}`;
 };
 
-export function guestErrors(guest: GuestFields): Partial<Record<keyof GuestFields, string>> {
+export function guestErrors(
+  guest: GuestFields,
+  requireEmail = true,
+): Partial<Record<keyof GuestFields, string>> {
   const errors: Partial<Record<keyof GuestFields, string>> = {};
 
   if (!guest.fullName.trim()) {
@@ -37,7 +40,7 @@ export function guestErrors(guest: GuestFields): Partial<Record<keyof GuestField
     errors.fullName = i18n.t('guest.errNameShort');
   }
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(guest.email.trim())) {
+  if (requireEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(guest.email.trim())) {
     errors.email = i18n.t('guest.errEmail');
   }
 
@@ -53,19 +56,25 @@ export function guestErrors(guest: GuestFields): Partial<Record<keyof GuestField
   return errors;
 }
 
-export function isGuestValid(guest: GuestFields): boolean {
-  return Object.keys(guestErrors(guest)).length === 0;
+export function isGuestValid(guest: GuestFields, requireEmail = true): boolean {
+  return Object.keys(guestErrors(guest, requireEmail)).length === 0;
 }
 
 interface GuestDetailsProps {
   value: GuestFields;
   onChange: (guest: GuestFields) => void;
   showErrors?: boolean;
+  withEmail?: boolean;
 }
 
-export default function GuestDetails({ value, onChange, showErrors = false }: GuestDetailsProps) {
+export default function GuestDetails({
+  value,
+  onChange,
+  showErrors = false,
+  withEmail = true,
+}: GuestDetailsProps) {
   const { t } = useTranslation();
-  const errors = guestErrors(value);
+  const errors = guestErrors(value, withEmail);
 
   const set = (key: keyof GuestFields, raw: string) => onChange({ ...value, [key]: raw });
 
@@ -95,18 +104,20 @@ export default function GuestDetails({ value, onChange, showErrors = false }: Gu
         {errorText('fullName')}
       </label>
 
-      <label className="block">
-        <span className={label}>{t('guest.email')}</span>
-        <input
-          className={`${input} ${ring('email')}`}
-          type="email"
-          value={value.email}
-          onChange={(e) => set('email', e.target.value)}
-          autoComplete="email"
-          placeholder="name@example.com"
-        />
-        {errorText('email')}
-      </label>
+      {withEmail && (
+        <label className="block">
+          <span className={label}>{t('guest.email')}</span>
+          <input
+            className={`${input} ${ring('email')}`}
+            type="email"
+            value={value.email}
+            onChange={(e) => set('email', e.target.value)}
+            autoComplete="email"
+            placeholder="name@example.com"
+          />
+          {errorText('email')}
+        </label>
+      )}
 
       <label className="block">
         <span className={label}>{t('guest.mobile')}</span>

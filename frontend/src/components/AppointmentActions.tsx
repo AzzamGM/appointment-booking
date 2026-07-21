@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { api, errorMessage } from '../lib/api';
+import { useAppointmentCache } from '../lib/appointments';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
 import { img } from '../lib/images';
 import Pic from './Pic';
+import ConfirmDialog from './ConfirmDialog';
 import type { Appointment } from '../types';
 
 type Rating = 'up' | 'down';
@@ -64,15 +66,14 @@ export function VisitRating({ appointmentId }: { appointmentId: string }) {
 export function useCancelAppointment() {
   const { t } = useTranslation();
   const toast = useToast();
-  const queryClient = useQueryClient();
+  const cache = useAppointmentCache();
 
   return useMutation({
     mutationFn: (id: string) => api<Appointment>(`/appointments/${id}/cancel`, { method: 'PATCH' }),
-    onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: ['my-appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['appointment', id] });
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    onSuccess: (updated) => {
+      cache.write(updated);
       toast.success(t('appointments.cancelled'));
+      cache.refresh(updated.id);
     },
     onError: (err) => {
       toast.error(errorMessage(err, t('errors.cancelFailed')));
@@ -80,8 +81,36 @@ export function useCancelAppointment() {
   });
 }
 
-const menuItem =
-  'flex w-full items-center gap-2.5 px-3 py-2.5 text-start text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50';
+function IconAction({
+  icon,
+  label,
+  tone,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  tone: 'neutral' | 'danger';
+  onClick: () => void;
+}) {
+  return (
+    <button
+      role="menuitem"
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className={`group/item relative flex h-10 w-full items-center justify-center rounded-xl transition-colors ${
+        tone === 'danger'
+          ? 'hover:bg-rose-50 dark:hover:bg-rose-950/50'
+          : 'hover:bg-teal-50 dark:hover:bg-teal-500/10'
+      }`}
+    >
+      <Pic src={icon} className="no-tilt h-6 w-6 transition-transform group-hover/item:scale-110" />
+      <span className="pointer-events-none absolute end-full top-1/2 me-2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-stone-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover/item:opacity-100 dark:bg-stone-700">
+        {label}
+      </span>
+    </button>
+  );
+}
 
 export default function AppointmentActions({
   appointment: a,
@@ -96,6 +125,7 @@ export default function AppointmentActions({
   const { user } = useAuth();
   const cancel = useCancelAppointment();
   const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const toggle = (next: boolean) => {
@@ -126,66 +156,81 @@ export default function AppointmentActions({
   if (!onViewSummary && !canCancel) return null;
 
   return (
-    <div ref={ref} className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
-      <button
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={t('appointments.actions')}
-        title={t('appointments.actions')}
-        onClick={() => toggle(!open)}
-        className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${
+    <div ref={ref} className="relative h-10 w-14 shrink-0" onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`absolute end-0 top-0 flex w-14 flex-col items-center rounded-2xl border transition-colors ${
           open
-            ? 'border-teal-300 bg-teal-50 text-teal-700 dark:border-teal-700 dark:bg-teal-500/10 dark:text-teal-300'
-            : 'border-stone-200 text-stone-500 hover:bg-stone-100 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800'
+            ? 'z-30 border-stone-200/80 bg-white/95 shadow-xl ring-1 ring-stone-900/5 backdrop-blur dark:border-stone-700 dark:bg-stone-900/95 dark:ring-black/40'
+            : 'border-stone-200 hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800'
         }`}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <circle cx="12" cy="5" r="2" />
-          <circle cx="12" cy="12" r="2" />
-          <circle cx="12" cy="19" r="2" />
-        </svg>
-      </button>
-
-      {open && (
-        <div
-          role="menu"
-          className="drop absolute end-0 top-full z-30 mt-1.5 w-52 overflow-hidden rounded-xl border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-900"
+        <button
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={t('appointments.actions')}
+          title={t('appointments.actions')}
+          onClick={() => toggle(!open)}
+          className={`flex h-10 w-full shrink-0 items-center justify-center rounded-2xl transition-colors ${
+            open ? 'text-teal-700 dark:text-teal-300' : 'text-stone-500 dark:text-stone-400'
+          }`}
         >
-          {onViewSummary && (
-            <button
-              role="menuitem"
-              onClick={() => {
-                toggle(false);
-                onViewSummary();
-              }}
-              className={`${menuItem} text-stone-700 hover:bg-stone-100 dark:text-stone-200 dark:hover:bg-stone-800`}
-            >
-              <Pic src={img.unhide} className="no-tilt h-5 w-5" />
-              {t('appointments.viewSummary')}
-            </button>
-          )}
-          {canCancel && (
-            <button
-              role="menuitem"
-              disabled={cancel.isPending}
-              onClick={() => cancel.mutate(a.id, { onSuccess: () => toggle(false) })}
-              className={`${menuItem} text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40`}
-            >
-              {cancelling ? (
-                <>
-                  <Pic src={img.hourglass} className="hourglass h-5 w-5" />
-                  {t('appointments.cancelling')}
-                </>
-              ) : (
-                <>
-                  <Pic src={img.cancel} className="no-tilt h-5 w-5" />
-                  {t('appointments.cancel')}
-                </>
-              )}
-            </button>
-          )}
-        </div>
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+            className={`transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
+          >
+            <circle cx="12" cy="5" r="2" />
+            <circle cx="12" cy="12" r="2" />
+            <circle cx="12" cy="19" r="2" />
+          </svg>
+        </button>
+
+        {open && (
+          <div
+            role="menu"
+            className="drop flex w-full flex-col items-center gap-1 border-t border-stone-200/70 px-1.5 pb-1.5 pt-1.5 dark:border-stone-700/70"
+          >
+            {onViewSummary && (
+              <IconAction
+                icon={img.view}
+                label={t('appointments.viewSummary')}
+                tone="neutral"
+                onClick={() => {
+                  toggle(false);
+                  onViewSummary();
+                }}
+              />
+            )}
+            {canCancel && (
+              <IconAction
+                icon={img.cancel}
+                label={t('appointments.cancel')}
+                tone="danger"
+                onClick={() => {
+                  toggle(false);
+                  setConfirming(true);
+                }}
+              />
+            )}
+          </div>
+        )}
+      </div>
+
+      {confirming && (
+        <ConfirmDialog
+          title={t('appointments.confirmCancelTitle')}
+          message={t('appointments.confirmCancelBody')}
+          confirmLabel={t('appointments.confirmCancelYes')}
+          cancelLabel={t('appointments.keepIt')}
+          busyLabel={t('appointments.cancelling')}
+          busy={cancelling}
+          onConfirm={() => cancel.mutate(a.id, { onSuccess: () => setConfirming(false) })}
+          onDismiss={() => setConfirming(false)}
+        />
       )}
     </div>
   );

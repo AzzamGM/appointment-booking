@@ -26,11 +26,49 @@ function loadReadKeys(userId: string): Set<string> {
   }
 }
 
+export function isActiveAppointment(a: Appointment, now = Date.now()): boolean {
+  if (a.status === 'CHECKED_IN' || a.status === 'IN_PROGRESS') return true;
+  if (a.status !== 'REQUESTED' && a.status !== 'CONFIRMED') return false;
+  return new Date(a.endAt).getTime() > now;
+}
+
+export function useActiveAppointmentCount(): number {
+  const { user } = useAuth();
+  const role = user?.role;
+
+  const source =
+    role === 'STAFF'
+      ? { key: 'staff-appointments', path: '/appointments' }
+      : role === 'DOCTOR'
+        ? { key: 'doctor-schedule', path: '/doctors/me/appointments' }
+        : { key: 'my-appointments', path: '/patients/me/appointments' };
+
+  const query = useQuery({
+    queryKey: [source.key],
+    enabled: !!user,
+    refetchInterval: 60_000,
+    queryFn: () => api<{ appointments: Appointment[] }>(source.path),
+  });
+
+  return useMemo(() => {
+    const now = Date.now();
+    return (query.data?.appointments ?? []).filter((a) => isActiveAppointment(a, now)).length;
+  }, [query.data]);
+}
+
+const SOURCES = {
+  STAFF: { key: 'staff-appointments', path: '/appointments', destination: '/staff' },
+  DOCTOR: { key: 'doctor-schedule', path: '/doctors/me/appointments', destination: '/' },
+  PATIENT: { key: 'my-appointments', path: '/patients/me/appointments', destination: '/appointments' },
+} as const;
+
 export function useBookingNotifications() {
   const { user } = useAuth();
   const { notifications: notificationsEnabled } = useSettings();
-  const isStaff = user?.role === 'STAFF';
-  const enabled = !!user && user.role !== 'DOCTOR' && notificationsEnabled;
+  const role = user?.role ?? 'PATIENT';
+  const isStaff = role === 'STAFF';
+  const source = SOURCES[role];
+  const enabled = !!user && notificationsEnabled;
 
   const [readKeys, setReadKeys] = useState<Set<string>>(() => new Set());
 
@@ -39,11 +77,10 @@ export function useBookingNotifications() {
   }, [user?.id]);
 
   const query = useQuery({
-    queryKey: isStaff ? ['staff-appointments'] : ['my-appointments'],
+    queryKey: [source.key],
     enabled,
     refetchInterval: 30_000,
-    queryFn: () =>
-      api<{ appointments: Appointment[] }>(isStaff ? '/appointments' : '/patients/me/appointments'),
+    queryFn: () => api<{ appointments: Appointment[] }>(source.path),
   });
 
   const rawItems = useMemo(() => {
@@ -52,7 +89,7 @@ export function useBookingNotifications() {
     const out: Array<{ kind: NotificationKind; appointment: Appointment }> = [];
 
     for (const a of list) {
-      if (a.status === 'CHECKED_IN') {
+      if (a.status === 'CHECKED_IN' || a.status === 'IN_PROGRESS') {
         out.push({ kind: 'current', appointment: a });
       } else if (isStaff && a.status === 'REQUESTED') {
         out.push({ kind: 'pending', appointment: a });
@@ -93,11 +130,12 @@ export function useBookingNotifications() {
 
   return {
     enabled,
+    role,
     isStaff,
     items,
     count: unreadCount,
     isLoading: query.isLoading,
-    destination: isStaff ? '/staff' : '/appointments',
+    destination: source.destination,
     markAllRead,
   };
 }

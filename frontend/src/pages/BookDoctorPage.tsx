@@ -41,6 +41,8 @@ import type {
 
 type Payment = 'clinic' | 'online';
 
+const WALK_IN = 'walk-in-guest';
+
 const PAYMENT_OPTIONS: Array<{
   value: Payment;
   icon: string;
@@ -96,6 +98,7 @@ export default function BookDoctorPage() {
   const [triedSubmit, setTriedSubmit] = useState(false);
   const [bookingFor, setBookingFor] = useState('');
   const isStaff = user?.role === 'STAFF';
+  const isWalkIn = isStaff && bookingFor === WALK_IN;
   const isGuest = !user;
 
   const timeCardRef = useRef<HTMLDivElement>(null);
@@ -170,15 +173,21 @@ export default function BookDoctorPage() {
         serviceId,
         ...(payment ? { notes: PAYMENT_OPTIONS.find((o) => o.value === payment)!.note } : {}),
       };
-      return isGuest
-        ? api<Appointment>('/appointments/guest', {
-            method: 'POST',
-            body: { ...body, ...guestInfo, phone: fullPhone(guestInfo) },
-          })
-        : api<Appointment>('/appointments', {
-            method: 'POST',
-            body: { ...body, ...(isStaff && bookingFor ? { patientId: bookingFor } : {}) },
-          });
+      if (isGuest || isWalkIn) {
+        return api<Appointment>('/appointments/guest', {
+          method: 'POST',
+          body: {
+            ...body,
+            fullName: guestInfo.fullName,
+            phone: fullPhone(guestInfo),
+            ...(isWalkIn ? {} : { email: guestInfo.email }),
+          },
+        });
+      }
+      return api<Appointment>('/appointments', {
+        method: 'POST',
+        body: { ...body, ...(isStaff && bookingFor ? { patientId: bookingFor } : {}) },
+      });
     },
     onSuccess: (appt) => {
       setSelectedSlotId(null);
@@ -219,7 +228,8 @@ export default function BookDoctorPage() {
   const doc = doctor.data!;
   const selectedService = services.data?.services.find((s) => s.id === serviceId);
   const cardReady = payment !== 'online' || isCardValid(cardInfo);
-  const guestReady = !isGuest || isGuestValid(guestInfo);
+  const guestReady =
+    (!isGuest || isGuestValid(guestInfo)) && (!isWalkIn || isGuestValid(guestInfo, false));
   const selectedSlot = dayAvailability.data?.slots.find((s) => s.id === selectedSlotId);
 
   const bookAnother = () => {
@@ -547,15 +557,29 @@ export default function BookDoctorPage() {
                     onChange={setBookingFor}
                     placeholder={t('book.choosePatient')}
                     invalid={triedSubmit && !bookingFor}
-                    options={(patients.data?.patients ?? []).map((p) => ({
-                      value: p.id,
-                      label: `${p.fullName} - ${p.email}`,
-                    }))}
+                    options={[
+                      { value: WALK_IN, label: t('book.walkInGuest') },
+                      ...(patients.data?.patients ?? []).map((p) => ({
+                        value: p.id,
+                        label: `${p.fullName} - ${p.email}`,
+                      })),
+                    ]}
                   />
                   {triedSubmit && !bookingFor && (
                     <span className="mt-1 block text-xs text-rose-600 dark:text-rose-400">
                       {t('book.choosePatientError')}
                     </span>
+                  )}
+
+                  {isWalkIn && (
+                    <div className="mt-3 rounded-xl border border-stone-200 bg-stone-50/70 p-3 dark:border-stone-700 dark:bg-stone-950/40">
+                      <GuestDetails
+                        value={guestInfo}
+                        onChange={setGuestInfo}
+                        showErrors={triedSubmit}
+                        withEmail={false}
+                      />
+                    </div>
                   )}
                 </div>
               )}

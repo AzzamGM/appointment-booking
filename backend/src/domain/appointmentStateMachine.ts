@@ -20,10 +20,20 @@ export function transitionAppointment(
         );
       }
       return AppointmentStatus.CHECKED_IN;
-    case AppointmentStatus.COMPLETED:
+    case AppointmentStatus.IN_PROGRESS:
       if (current !== AppointmentStatus.CHECKED_IN) {
         throw new ConflictError(
-          `Cannot complete an ${current} appointment: only CHECKED_IN appointments can be completed`,
+          `Cannot start a ${current} appointment: only CHECKED_IN appointments can be started`,
+        );
+      }
+      return AppointmentStatus.IN_PROGRESS;
+    case AppointmentStatus.COMPLETED:
+      if (
+        current !== AppointmentStatus.CHECKED_IN &&
+        current !== AppointmentStatus.IN_PROGRESS
+      ) {
+        throw new ConflictError(
+          `Cannot complete an ${current} appointment: only CHECKED_IN or IN_PROGRESS appointments can be completed`,
         );
       }
       return AppointmentStatus.COMPLETED;
@@ -35,9 +45,12 @@ export function transitionAppointment(
       }
       return AppointmentStatus.CONFIRMED;
     case AppointmentStatus.NO_SHOW:
-      if (current !== AppointmentStatus.CONFIRMED) {
+      if (
+        current !== AppointmentStatus.CONFIRMED &&
+        current !== AppointmentStatus.CHECKED_IN
+      ) {
         throw new ConflictError(
-          `Cannot no-show a ${current} appointment: only CONFIRMED appointments can be marked no-show`,
+          `Cannot no-show a ${current} appointment: only CONFIRMED or CHECKED_IN appointments can be marked no-show`,
         );
       }
       return AppointmentStatus.NO_SHOW;

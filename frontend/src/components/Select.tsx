@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import Pic from './Pic';
 
 export interface SelectOption {
   value: string;
   label: string;
+  icon?: string;
 }
 
 interface SelectProps {
@@ -98,8 +100,13 @@ export default function Select({
             : 'border-stone-300 focus:border-teal-500 focus:ring-teal-500/25 dark:border-stone-700 dark:focus:border-teal-400 dark:focus:ring-teal-400/25'
         }`}
       >
-        <span className={selected ? '' : 'text-stone-400 dark:text-stone-500'}>
-          {selected ? selected.label : placeholder}
+        <span
+          className={`flex min-w-0 items-center gap-2 ${
+            selected ? '' : 'text-stone-400 dark:text-stone-500'
+          }`}
+        >
+          {selected?.icon && <Pic src={selected.icon} className="h-5 w-5 shrink-0" />}
+          <span className="truncate">{selected ? selected.label : placeholder}</span>
         </span>
         <svg
           className={`shrink-0 text-stone-400 transition-transform duration-200 dark:text-stone-500 ${open ? 'rotate-180' : ''}`}
@@ -141,7 +148,10 @@ export default function Select({
                       : 'text-stone-700 dark:text-stone-200'
                   }`}
                 >
-                  {o.label}
+                  <span className="flex min-w-0 items-center gap-2">
+                    {o.icon && <Pic src={o.icon} className="h-5 w-5 shrink-0" />}
+                    <span className="truncate">{o.label}</span>
+                  </span>
                   {isSelected && (
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M20 6L9 17l-5-5" />

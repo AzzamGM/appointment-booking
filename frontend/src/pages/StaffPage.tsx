@@ -1,25 +1,60 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link, useNavigate } from 'react-router-dom';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useLocalize } from '../lib/i18n';
 import { api, errorMessage } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
-import { statusStyle } from '../lib/labels';
-import { formatDate, formatTime } from '../lib/format';
-import { img, statusIcon } from '../lib/images';
+import { firstName, formatDate, formatTime } from '../lib/format';
+import { img, specialtyIcon, userAvatar } from '../lib/images';
 import Pic from '../components/Pic';
 import Loading from '../components/Loading';
+import ConfirmDialog from '../components/ConfirmDialog';
+import AppointmentCard, { MetaItem } from '../components/AppointmentCard';
+import AppointmentFilters from '../components/AppointmentFilters';
 import { btnDanger, btnGhost, card, input, label, mutedText, pageTitle } from '../lib/ui';
+import DayHeading from '../components/DayHeading';
+import Divider from '../components/Divider';
+import { groupByDay, useAppointmentCache, useAppointmentFilters } from '../lib/appointments';
 import type { Appointment, AuditEntry } from '../types';
 
-type Action = 'confirm' | 'check-in' | 'cancel';
+type Action = 'confirm' | 'check-in' | 'decline' | 'no-show';
 
-const ACTION_KEY: Record<Action, string> = {
-  confirm: 'staff.confirmed',
-  'check-in': 'staff.checkedIn',
-  cancel: 'appointments.cancelled',
+const ACTION_COPY: Record<
+  Action,
+  { done: string; title: string; body: string; yes: string; busy: string; danger?: boolean }
+> = {
+  confirm: {
+    done: 'staff.confirmed',
+    title: 'staff.confirmConfirmTitle',
+    body: 'staff.confirmConfirmBody',
+    yes: 'staff.confirmConfirmYes',
+    busy: 'staff.confirming',
+  },
+  'check-in': {
+    done: 'staff.checkedIn',
+    title: 'staff.confirmCheckInTitle',
+    body: 'staff.confirmCheckInBody',
+    yes: 'staff.confirmCheckInYes',
+    busy: 'staff.checkingIn',
+  },
+  decline: {
+    done: 'appointments.cancelled',
+    title: 'staff.confirmDeclineTitle',
+    body: 'staff.confirmCancelBody',
+    yes: 'staff.confirmDeclineYes',
+    busy: 'appointments.cancelling',
+    danger: true,
+  },
+  'no-show': {
+    done: 'staff.noShowMarked',
+    title: 'staff.confirmNoShowTitle',
+    body: 'staff.confirmNoShowBody',
+    yes: 'staff.confirmNoShowYes',
+    busy: 'staff.markingNoShow',
+    danger: true,
+  },
 };
 
 function auditIcon(action: string): string {
@@ -34,15 +69,23 @@ export default function StaffPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const L = useLocalize();
-  const queryClient = useQueryClient();
+  const cache = useAppointmentCache();
+  const navigate = useNavigate();
   const toast = useToast();
   const [showLog, setShowLog] = useState(false);
+  const [confirming, setConfirming] = useState<{
+    appointment: Appointment;
+    action: Action;
+  } | null>(null);
 
   const appointments = useQuery({
     queryKey: ['staff-appointments'],
     enabled: user?.role === 'STAFF',
     queryFn: () => api<{ appointments: Appointment[] }>('/appointments'),
   });
+
+  const all = appointments.data?.appointments ?? [];
+  const filters = useAppointmentFilters(all);
 
   const audit = useQuery({
     queryKey: ['audit'],
@@ -53,21 +96,22 @@ export default function StaffPage() {
 
   const act = useMutation({
     mutationFn: (input: { id: string; action: Action }) => {
-      if (input.action === 'confirm') {
-        return api<Appointment>(`/appointments/${input.id}/status`, {
-          method: 'PATCH',
-          body: { status: 'CONFIRMED' },
-        });
-      }
       if (input.action === 'check-in') {
         return api<Appointment>(`/appointments/${input.id}/check-in`, { method: 'PATCH' });
       }
-      return api<Appointment>(`/appointments/${input.id}/cancel`, { method: 'PATCH' });
+      if (input.action === 'decline') {
+        return api<Appointment>(`/appointments/${input.id}/cancel`, { method: 'PATCH' });
+      }
+      return api<Appointment>(`/appointments/${input.id}/status`, {
+        method: 'PATCH',
+        body: { status: input.action === 'confirm' ? 'CONFIRMED' : 'NO_SHOW' },
+      });
     },
-    onSuccess: (_data, vars) => {
-      queryClient.invalidateQueries({ queryKey: ['staff-appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['audit'] });
-      toast.success(t(ACTION_KEY[vars.action]));
+    onSuccess: (updated, vars) => {
+      cache.write(updated);
+      toast.success(t(ACTION_COPY[vars.action].done));
+      setConfirming(null);
+      cache.refresh(updated.id);
     },
     onError: (err) => {
       toast.error(errorMessage(err, t('errors.actionFailed')));
@@ -89,26 +133,23 @@ export default function StaffPage() {
     (a) => a.status === 'REQUESTED',
   ).length;
 
-  const actionButton = (
-    a: Appointment,
-    action: Action,
-    icon: string,
-    idleLabel: string,
-    busyLabel: string,
-    danger = false,
-  ) => (
-    <button
-      className={`flex items-center gap-1.5 ${danger ? btnDanger : btnGhost}`}
-      disabled={rowBusy(a.id)}
-      onClick={() => act.mutate({ id: a.id, action })}
-    >
-      <Pic
-        src={actionBusy(a.id, action) ? img.hourglass : icon}
-        className={`h-5 w-5 ${actionBusy(a.id, action) ? 'hourglass' : ''}`}
-      />
-      {actionBusy(a.id, action) ? busyLabel : idleLabel}
-    </button>
-  );
+  const actionButton = (a: Appointment, action: Action, icon: string, idleLabel: string) => {
+    const copy = ACTION_COPY[action];
+    const busy = actionBusy(a.id, action);
+    return (
+      <button
+        className={`flex items-center gap-1.5 ${copy.danger ? btnDanger : btnGhost}`}
+        disabled={rowBusy(a.id)}
+        onClick={() => setConfirming({ appointment: a, action })}
+      >
+        <Pic
+          src={busy ? img.hourglass : icon}
+          className={`h-5 w-5 ${busy ? 'hourglass' : ''}`}
+        />
+        {busy ? t(copy.busy) : idleLabel}
+      </button>
+    );
+  };
 
   return (
     <div>
@@ -183,6 +224,8 @@ export default function StaffPage() {
         </div>
       )}
 
+      {all.length > 0 && <AppointmentFilters state={filters} total={all.length} />}
+
       {appointments.isLoading && (
         <div className="space-y-2">
           <Loading text={t('staff.loadingSchedule')} />
@@ -201,78 +244,136 @@ export default function StaffPage() {
         </div>
       )}
 
-      <div className="space-y-2">
-        {appointments.data?.appointments.map((a, i) => (
-          <div
+      {all.length > 0 && filters.results.length === 0 && (
+        <div className={`${card} flex flex-col items-center gap-3 p-8 text-center`}>
+          <Pic src={img.search} className="h-12 w-12 opacity-60" />
+          <p className={mutedText}>{t('filters.noMatches')}</p>
+        </div>
+      )}
+
+      <div className="space-y-5">
+        {groupByDay(filters.results).map(([date, list]) => (
+          <div key={date}>
+            <DayHeading
+              date={date}
+              label={`${list.length} ${t(
+                list.length === 1
+                  ? 'appointments.appointmentOnDay'
+                  : 'appointments.appointmentsOnDay',
+              )}`}
+            />
+            <div className="space-y-2">
+        {list.map((a, i) => (
+          <AppointmentCard
             key={a.id}
-            className={`${card} rise p-3 hover:border-stone-300 dark:hover:border-stone-700`}
-            style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-                <span
-                  className={`flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${statusStyle[a.status]}`}
-                >
-                  <Pic src={statusIcon[a.status]} className="h-4.5 w-4.5" />
-                  {t(`statusShort.${a.status}`)}
-                </span>
-                <span className="font-mono text-stone-400 dark:text-stone-500">{a.reference}</span>
-                <span className="font-medium">{a.patient.fullName}</span>
+            appointment={a}
+            index={i}
+            avatar={userAvatar(a.patient.email ?? a.patient.id ?? '', 'PATIENT')}
+            name={firstName(a.patient.fullName)}
+            nameTitle={a.patient.fullName}
+            subtitle={L(a.service.name, a.service.nameAr)}
+            meta={
+              <>
                 {a.patient.isGuest && (
                   <span
-                    className="flex items-center gap-1.5 rounded-md bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-300"
-                    title={`${a.patient.email ?? ''} - ${a.patient.phone ?? ''}`}
+                    title={a.patient.email ?? undefined}
+                    className="w-fit shrink-0 rounded-md bg-stone-100 px-1.5 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-300"
                   >
-                    <Pic src={img.user} className="h-4 w-4" />
-                    Guest - {a.patient.phone}
+                    {t('common.guest')}
                   </span>
                 )}
-                <span className="text-stone-500 dark:text-stone-400">
-                  {L(a.service.name, a.service.nameAr)} - {L(a.doctor.name, a.doctor.nameAr)} (
-                  {t(`specialty.${a.doctor.specialty}`)})
-                </span>
-                <span className="flex items-center gap-1.5 text-stone-500 dark:text-stone-400">
-                  <Pic src={img.clock} className="h-4.5 w-4.5" />
-                  {formatDate(a.startAt)} {formatTime(a.startAt)} - {a.clinic.code}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
+                {a.patient.phone && (
+                  <MetaItem icon={img.phoneCall}>
+                    <span dir="ltr">{a.patient.phone}</span>
+                  </MetaItem>
+                )}
+                <MetaItem icon={specialtyIcon[a.doctor.specialty]} muted={false}>
+                  {t(`specialty.${a.doctor.specialty}`)}
+                </MetaItem>
+                <MetaItem
+                  icon={img.maleDoctor}
+                  title={L(a.doctor.name, a.doctor.nameAr)}
+                >
+                  {firstName(L(a.doctor.name, a.doctor.nameAr))}
+                </MetaItem>
+                <MetaItem icon={img.locationPin}>{a.clinic.code}</MetaItem>
+              </>
+            }
+            footer={
+              <>
+                <button
+                  className={`flex items-center gap-1.5 ${btnGhost}`}
+                  onClick={() => navigate(`/appointments/${a.id}`)}
+                >
+                  <Pic src={img.view} className="h-5 w-5" />
+                  {t('appointments.viewSummary')}
+                </button>
                 {a.status === 'REQUESTED' &&
-                  actionButton(a, 'confirm', img.approved, t('staff.confirm'), t('staff.confirming'))}
+                  actionButton(a, 'confirm', img.approved, t('staff.confirm'))}
                 {a.status === 'CONFIRMED' &&
-                  actionButton(a, 'check-in', img.idCard, t('staff.checkIn'), t('staff.checkingIn'))}
-                {a.status === 'CHECKED_IN' && (
+                  actionButton(a, 'check-in', img.idCard, t('staff.checkIn'))}
+                {(a.status === 'CHECKED_IN' || a.status === 'IN_PROGRESS') && (
                   <span className="flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500">
-                    <Pic src={img.checkUp} className="h-5 w-5" />
-                    {t('staff.withDoctor')}
+                    <Pic
+                      src={a.status === 'IN_PROGRESS' ? img.checkUp : img.hourglass}
+                      className="h-5 w-5"
+                    />
+                    {t(a.status === 'IN_PROGRESS' ? 'staff.withDoctor' : 'staff.waiting')}
                   </span>
                 )}
-                {(a.status === 'REQUESTED' || a.status === 'CONFIRMED') &&
-                  actionButton(
-                    a,
-                    'cancel',
-                    a.status === 'REQUESTED' ? img.unapproved : img.cancel,
-                    a.status === 'REQUESTED' ? 'Decline' : 'Cancel',
-                    t('appointments.cancelling'),
-                    true,
-                  )}
-              </div>
-            </div>
-
+                {a.status === 'REQUESTED' &&
+                  actionButton(a, 'decline', img.unapproved, t('staff.decline'))}
+                {a.status === 'CONFIRMED' &&
+                  actionButton(a, 'no-show', img.noShow, t('staff.noShow'))}
+              </>
+            }
+          >
             {a.prescriptions.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
-                {a.prescriptions.map((p) => (
-                  <span key={p.id} className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
-                    <Pic src={img.medicine} className="h-4 w-4" />
-                    {p.medication} {p.dosage}, {p.frequency}
+              <div>
+                <Divider align="start">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
+                    <Pic src={img.pills} className="h-4.5 w-4.5" />
+                    {t('appointments.prescribed')}
                   </span>
-                ))}
+                </Divider>
+                <div className="flex flex-wrap gap-x-5 gap-y-1 px-2.5">
+                  {a.prescriptions.map((p) => (
+                    <span
+                      key={p.id}
+                      className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400"
+                    >
+                      <Pic src={img.medicine} className="h-4 w-4" />
+                      {p.medication} {p.dosage}, {p.frequency}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
-
+          </AppointmentCard>
+        ))}
+            </div>
           </div>
         ))}
       </div>
+
+      {confirming && (
+        <ConfirmDialog
+          title={t(ACTION_COPY[confirming.action].title)}
+          message={t(ACTION_COPY[confirming.action].body, {
+            patient: confirming.appointment.patient.fullName,
+          })}
+          confirmLabel={t(ACTION_COPY[confirming.action].yes)}
+          cancelLabel={t('common.back')}
+          busyLabel={t(ACTION_COPY[confirming.action].busy)}
+          icon={ACTION_COPY[confirming.action].danger ? img.caution : img.questionMark}
+          tone={ACTION_COPY[confirming.action].danger ? 'danger' : 'primary'}
+          busy={actionBusy(confirming.appointment.id, confirming.action)}
+          onConfirm={() =>
+            act.mutate({ id: confirming.appointment.id, action: confirming.action })
+          }
+          onDismiss={() => setConfirming(null)}
+        />
+      )}
     </div>
   );
 }

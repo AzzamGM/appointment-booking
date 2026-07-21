@@ -16,6 +16,11 @@ export function formatTime(iso: string): string {
   });
 }
 
+export function splitTime(iso: string): { clock: string; period: string } {
+  const [clock, period = ''] = formatTime(iso).split(' ');
+  return { clock, period };
+}
+
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
     weekday: 'short',
@@ -23,6 +28,14 @@ export function formatDate(iso: string): string {
     day: 'numeric',
     timeZone: 'UTC',
   });
+}
+
+const TITLE = /^(dr|prof|mr|mrs|ms|د|أ|الدكتور|الدكتورة)\.?$/i;
+
+export function firstName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length < 2) return fullName;
+  return TITLE.test(parts[0]) ? `${parts[0]} ${parts[1]}` : parts[0];
 }
 
 export function formatDuration(minutes: number): string {

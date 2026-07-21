@@ -14,13 +14,18 @@ const ALL = Object.values(AppointmentStatus);
 const LEGAL: Record<AppointmentStatus, AppointmentStatus[]> = {
   REQUESTED: [AppointmentStatus.CONFIRMED, AppointmentStatus.CANCELLED],
   CONFIRMED: [AppointmentStatus.CHECKED_IN, AppointmentStatus.CANCELLED, AppointmentStatus.NO_SHOW],
-  CHECKED_IN: [AppointmentStatus.COMPLETED],
+  CHECKED_IN: [
+    AppointmentStatus.IN_PROGRESS,
+    AppointmentStatus.COMPLETED,
+    AppointmentStatus.NO_SHOW,
+  ],
+  IN_PROGRESS: [AppointmentStatus.COMPLETED],
   COMPLETED: [],
   CANCELLED: [],
   NO_SHOW: [],
 };
 
-describe('transitionAppointment — all 36 state pairs', () => {
+describe('transitionAppointment — every state pair', () => {
   for (const from of ALL) {
     for (const to of ALL) {
       const legal = LEGAL[from].includes(to);

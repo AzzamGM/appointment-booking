@@ -1,29 +1,19 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocalize } from '../lib/i18n';
 import { formatDate, formatMoney, formatTime } from '../lib/format';
-import { doctorAvatar, img, serviceIcon, specialtyIcon, statusIcon } from '../lib/images';
+import { doctorAvatar, img, serviceIcon, specialtyIcon, statusIcon, userAvatar } from '../lib/images';
 import { statusStyle } from '../lib/labels';
-import { useToast } from '../lib/toast';
+import { useAuth } from '../lib/auth';
 import Pic from './Pic';
+import Divider from './Divider';
+import ReferenceChip from './ReferenceChip';
+import Prescriptions from './Prescriptions';
 import type { Appointment } from '../types';
 
 export default function AppointmentSummary({ appointment: a }: { appointment: Appointment }) {
   const { t } = useTranslation();
   const L = useLocalize();
-  const toast = useToast();
-  const [copied, setCopied] = useState(false);
-
-  const copyReference = async () => {
-    try {
-      await navigator.clipboard.writeText(a.reference);
-      setCopied(true);
-      toast.success(`${t('common.copied')}: ${a.reference}`);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error(t('errors.clipboard'));
-    }
-  };
+  const { user } = useAuth();
 
   return (
     <div>
@@ -37,22 +27,7 @@ export default function AppointmentSummary({ appointment: a }: { appointment: Ap
           {L(a.doctor.name, a.doctor.nameAr)}
         </h2>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <button
-            type="button"
-            onClick={copyReference}
-            title={copied ? t('common.copied') : t('common.copyReference')}
-            aria-label={t('common.copyReference')}
-            className={`flex w-fit items-center gap-2 rounded-lg px-2.5 py-1 transition-colors ${
-              copied
-                ? 'bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400'
-                : 'bg-teal-50 text-teal-700 hover:bg-teal-100 dark:bg-teal-500/10 dark:text-teal-300 dark:hover:bg-teal-500/20'
-            }`}
-          >
-            <Pic src={copied ? img.approved : img.copy} className="no-tilt h-5 w-5 shrink-0" />
-            <span className="font-mono font-bold tracking-widest">
-              {copied ? t('common.copied') : a.reference}
-            </span>
-          </button>
+          <ReferenceChip reference={a.reference} />
           <span
             className={`inline-flex w-fit items-center gap-1.5 rounded-lg px-2.5 py-1 text-sm font-semibold ${statusStyle[a.status]}`}
           >
@@ -62,7 +37,9 @@ export default function AppointmentSummary({ appointment: a }: { appointment: Ap
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-x-4 gap-y-2.5 border-t border-stone-100 pt-4 text-sm dark:border-stone-800 sm:grid-cols-2">
+      <Divider className="my-4" />
+
+      <div className="grid grid-cols-1 gap-x-4 gap-y-2.5 text-sm sm:grid-cols-2">
         <span className="flex items-center gap-2">
           <Pic src={serviceIcon(a.service.name)} className="h-5 w-5 shrink-0" />
           {L(a.service.name, a.service.nameAr)}
@@ -91,56 +68,65 @@ export default function AppointmentSummary({ appointment: a }: { appointment: Ap
         )}
       </div>
 
-      <div className="mt-4 border-t border-stone-100 pt-4 dark:border-stone-800">
-        <p className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
-          <Pic src={img.userInfo} className="h-6 w-6" />
+      <div className="mt-4 rounded-2xl border border-stone-200/70 bg-stone-50/80 p-4 dark:border-stone-800 dark:bg-stone-950/40">
+        <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+          <Pic src={img.userInfo} className="h-5 w-5" />
           {t('detail.patientDetails')}
           {a.patient.isGuest && (
-            <span className="rounded-md bg-stone-100 px-1.5 py-0.5 text-xs font-medium normal-case tracking-normal text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+            <span className="rounded-md bg-stone-200 px-1.5 py-0.5 text-xs font-medium normal-case tracking-normal text-stone-600 dark:bg-stone-800 dark:text-stone-300">
               {t('common.guest')}
             </span>
           )}
         </p>
-        <div className="grid grid-cols-1 gap-x-4 gap-y-2.5 text-sm sm:grid-cols-2">
-          <span className="flex items-center gap-2">
-            <Pic src={img.idCard} className="h-5 w-5 shrink-0" />
-            {a.patient.fullName}
-          </span>
-          {a.patient.email && (
-            <span className="flex items-center gap-2">
-              <Pic src={img.email} className="h-5 w-5 shrink-0" />
-              {a.patient.email}
-            </span>
-          )}
-          {a.patient.phone && (
-            <span className="flex items-center gap-2">
-              <Pic src={img.phoneCall} className="h-5 w-5 shrink-0" />
-              {a.patient.phone}
-            </span>
-          )}
+
+        <div className="flex items-center gap-3">
+          <Pic
+            src={userAvatar(a.patient.email ?? a.patient.id ?? '', 'PATIENT')}
+            fit="cover"
+            className="h-11 w-11 shrink-0 rounded-full border border-stone-200 bg-white p-0.5 dark:border-stone-700 dark:bg-stone-800"
+          />
+          <div className="min-w-0">
+            <p className="truncate font-semibold">{a.patient.fullName}</p>
+            <p className="text-xs text-stone-500 dark:text-stone-400">
+              {a.patient.isGuest ? t('detail.guestBooking') : t('detail.registeredPatient')}
+            </p>
+          </div>
         </div>
+
+        {(a.patient.email || a.patient.phone) && (
+          <div className="mt-3 grid grid-cols-1 gap-2 border-t border-stone-200/70 pt-3 text-sm dark:border-stone-800 sm:grid-cols-2">
+            {a.patient.email && (
+              <a
+                href={`mailto:${a.patient.email}`}
+                className="flex min-w-0 items-center gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-stone-200/60 dark:hover:bg-stone-800/60"
+              >
+                <Pic src={img.email} className="h-5 w-5 shrink-0" />
+                <span className="truncate">{a.patient.email}</span>
+              </a>
+            )}
+            {a.patient.phone && (
+              <a
+                href={`tel:${a.patient.phone}`}
+                className="flex min-w-0 items-center gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-stone-200/60 dark:hover:bg-stone-800/60"
+              >
+                <Pic src={img.phoneCall} className="h-5 w-5 shrink-0" />
+                <span dir="ltr" className="truncate">
+                  {a.patient.phone}
+                </span>
+              </a>
+            )}
+          </div>
+        )}
+
+        {user?.role === 'DOCTOR' && (
+          <p className="mt-3 flex items-center gap-2 border-t border-stone-200/70 pt-3 text-xs text-stone-400 dark:border-stone-800 dark:text-stone-500">
+            <Pic src={img.information} className="h-4 w-4 shrink-0" />
+            {t('detail.contactHidden')}
+          </p>
+        )}
       </div>
 
-      {a.prescriptions.length > 0 && (
-        <div className="mt-4 space-y-1.5 rounded-xl bg-teal-50/60 p-3 dark:bg-teal-500/5">
-          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
-            <Pic src={img.pills} className="h-5 w-5" />
-            {t('appointments.prescribed')}
-          </p>
-          {a.prescriptions.map((p) => (
-            <p key={p.id} className="flex items-start gap-2 text-sm">
-              <Pic src={img.medicine} className="mt-0.5 h-5 w-5" />
-              <span>
-                <span className="font-medium">{p.medication}</span> — {p.dosage}, {p.frequency}
-                {p.instructions ? `. ${p.instructions}` : ''}
-                <span className="ml-1 text-xs text-stone-400 dark:text-stone-500">
-                  ({p.prescribedBy})
-                </span>
-              </span>
-            </p>
-          ))}
-        </div>
-      )}
+      <Prescriptions appointment={a} />
     </div>
   );
 }

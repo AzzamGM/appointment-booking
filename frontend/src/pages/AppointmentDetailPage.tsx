@@ -6,6 +6,7 @@ import Loading from '../components/Loading';
 import AppointmentSummary from '../components/AppointmentSummary';
 import AppointmentActions, { VisitRating } from '../components/AppointmentActions';
 import ErrorState from '../components/ErrorState';
+import Divider from '../components/Divider';
 import { card } from '../lib/ui';
 import type { Appointment } from '../types';
 
@@ -53,7 +54,8 @@ export default function AppointmentDetailPage() {
         <div className={`${card} rise p-5 sm:p-6`}>
           <AppointmentSummary appointment={appointment.data} />
           {appointment.data.status === 'COMPLETED' && (
-            <div className="mt-4 border-t border-stone-100 pt-4 dark:border-stone-800">
+            <div>
+              <Divider className="my-4" />
               <VisitRating appointmentId={appointment.data.id} />
             </div>
           )}

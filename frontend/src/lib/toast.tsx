@@ -140,7 +140,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               data-leaving={t.leaving}
               onMouseEnter={() => pause(t.id)}
               onMouseLeave={() => resume(t.id, t.kind)}
-              className={`toast drop pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl border p-3.5 text-white shadow-lg backdrop-blur ${style.container}`}
+              className={`toast drop pointer-events-auto flex max-w-full items-start gap-3 rounded-xl border p-3.5 text-white shadow-lg backdrop-blur sm:max-w-md ${style.container}`}
             >
               <svg
                 className="mt-0.5 shrink-0"
@@ -155,7 +155,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               >
                 {style.path}
               </svg>
-              <div className="flex-1 text-sm font-medium">
+              <div className="min-w-0 text-sm font-medium">
                 {t.message}
                 {t.action && (
                   <button

@@ -23,7 +23,7 @@ const guestAppointmentSchema = createAppointmentSchema
   .omit({ patientId: true })
   .extend({
     fullName: z.string().min(1).max(100),
-    email: z.string().email(),
+    email: z.string().email().optional(),
     phone: z
       .string()
       .trim()
@@ -103,7 +103,7 @@ appointmentsRouter.patch(
   }),
 );
 
-const createPrescriptionSchema = z.object({
+const prescriptionSchema = z.object({
   medication: z.string().min(1).max(120),
   dosage: z.string().min(1).max(60),
   frequency: z.string().min(1).max(120),
@@ -114,13 +114,41 @@ appointmentsRouter.post(
   '/:id/prescriptions',
   requireRole('DOCTOR'),
   asyncHandler(async (req, res) => {
-    const input = createPrescriptionSchema.parse(req.body);
+    const input = prescriptionSchema.parse(req.body);
     const prescription = await prescriptionService.createPrescription(
       requester(req),
       req.params.id,
       input,
     );
     res.status(201).json(prescription);
+  }),
+);
+
+appointmentsRouter.patch(
+  '/:id/prescriptions/:prescriptionId',
+  requireRole('DOCTOR'),
+  asyncHandler(async (req, res) => {
+    const input = prescriptionSchema.parse(req.body);
+    const prescription = await prescriptionService.updatePrescription(
+      requester(req),
+      req.params.id,
+      req.params.prescriptionId,
+      input,
+    );
+    res.json(prescription);
+  }),
+);
+
+appointmentsRouter.delete(
+  '/:id/prescriptions/:prescriptionId',
+  requireRole('DOCTOR'),
+  asyncHandler(async (req, res) => {
+    await prescriptionService.deletePrescription(
+      requester(req),
+      req.params.id,
+      req.params.prescriptionId,
+    );
+    res.status(204).end();
   }),
 );
 

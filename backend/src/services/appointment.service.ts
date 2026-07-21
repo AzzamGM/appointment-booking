@@ -26,7 +26,7 @@ export interface Requester {
 
 export interface GuestContact {
   fullName: string;
-  email: string;
+  email?: string;
   phone: string;
 }
 
@@ -40,7 +40,8 @@ const appointmentWithDetails = Prisma.validator<Prisma.AppointmentDefaultArgs>()
 });
 type AppointmentWithDetails = Prisma.AppointmentGetPayload<typeof appointmentWithDetails>;
 
-export function toAppointmentDto(appt: AppointmentWithDetails) {
+export function toAppointmentDto(appt: AppointmentWithDetails, viewerRole?: Requester['role']) {
+  const hideContact = viewerRole === 'DOCTOR';
   return {
     id: appt.id,
     reference: appt.reference,
@@ -73,8 +74,8 @@ export function toAppointmentDto(appt: AppointmentWithDetails) {
       : {
           id: null,
           fullName: appt.guestName ?? 'Guest',
-          email: appt.guestEmail,
-          phone: appt.guestPhone,
+          email: hideContact ? null : appt.guestEmail,
+          phone: hideContact ? null : appt.guestPhone,
           isGuest: true,
         },
     notes: appt.notes,
@@ -229,7 +230,7 @@ export async function getAppointmentById(appointmentId: string, requester: Reque
   });
   if (!appt) throw new NotFoundError('Appointment not found');
   await assertCanAccess(appt, requester);
-  return toAppointmentDto(appt);
+  return toAppointmentDto(appt, requester.role);
 }
 
 export async function listPatientAppointments(patientId: string) {
@@ -238,7 +239,7 @@ export async function listPatientAppointments(patientId: string) {
     orderBy: { createdAt: 'desc' },
     ...appointmentWithDetails,
   });
-  return appts.map(toAppointmentDto);
+  return appts.map((a) => toAppointmentDto(a, 'PATIENT'));
 }
 
 export async function listDoctorAppointments(userId: string) {
@@ -256,7 +257,7 @@ export async function listDoctorAppointments(userId: string) {
     take: 100,
     ...appointmentWithDetails,
   });
-  return appts.map(toAppointmentDto);
+  return appts.map((a) => toAppointmentDto(a, 'DOCTOR'));
 }
 
 export async function listUpcomingAppointments() {
@@ -266,7 +267,7 @@ export async function listUpcomingAppointments() {
     take: 100,
     ...appointmentWithDetails,
   });
-  return appts.map(toAppointmentDto);
+  return appts.map((a) => toAppointmentDto(a, 'STAFF'));
 }
 
 export async function changeStatus(
@@ -281,11 +282,14 @@ export async function changeStatus(
   if (!appt) throw new NotFoundError('Appointment not found');
   await assertCanAccess(appt, requester);
 
-  if (to === AppointmentStatus.COMPLETED && requester.role !== 'DOCTOR') {
-    throw new ForbiddenError('Only the doctor who saw the patient can complete a visit');
+  const doctorOnly =
+    to === AppointmentStatus.COMPLETED || to === AppointmentStatus.IN_PROGRESS;
+  const sharedWithDoctor = doctorOnly || to === AppointmentStatus.NO_SHOW;
+  if (doctorOnly && requester.role !== 'DOCTOR') {
+    throw new ForbiddenError('Only the doctor seeing the patient can start or complete a visit');
   }
-  if (to !== AppointmentStatus.COMPLETED && requester.role === 'DOCTOR') {
-    throw new ForbiddenError('Doctors can only mark a visit as completed');
+  if (!sharedWithDoctor && requester.role === 'DOCTOR') {
+    throw new ForbiddenError('Doctors can only start, complete, or no-show a visit');
   }
 
   const newStatus = transitionAppointment(appt.status, to);
