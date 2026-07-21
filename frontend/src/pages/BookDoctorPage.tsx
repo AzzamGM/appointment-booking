@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DayPicker } from 'react-day-picker';
+import { arSA } from 'react-day-picker/locale';
 import 'react-day-picker/style.css';
 import { useTranslation } from 'react-i18next';
-import { useLocalize } from '../lib/i18n';
+import { useLang, useLocalize } from '../lib/i18n';
 import { api, errorMessage } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
@@ -80,6 +81,7 @@ export default function BookDoctorPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const L = useLocalize();
+  const { lang } = useLang();
   const navigate = useNavigate();
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -411,6 +413,8 @@ export default function BookDoctorPage() {
                 >
                   <DayPicker
                     mode="single"
+                    locale={lang === 'ar' ? arSA : undefined}
+                    dir={lang === 'ar' ? 'rtl' : 'ltr'}
                     month={month}
                     onMonthChange={setMonth}
                     selected={selectedDate}
