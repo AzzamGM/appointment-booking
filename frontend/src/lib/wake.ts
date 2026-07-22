@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 export const WAKE_THRESHOLD_MS = 4000;
-export const WAKE_ESTIMATE_MS = 60000;
+export const WAKE_ESTIMATE_MS = 30000;
 
 let startedAt: number | null = null;
 let pending = 0;
