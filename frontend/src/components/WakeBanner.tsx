@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { isolate } from '../lib/format';
 import { useWaking } from '../lib/wake';
 
 export default function WakeBanner() {
@@ -21,7 +22,7 @@ export default function WakeBanner() {
               {t('wake.title')}
             </p>
             <p className="text-xs text-stone-500 dark:text-stone-400">
-              {remaining > 0 ? t('wake.countdown', { seconds: remaining }) : t('wake.almost')}
+              {remaining > 0 ? t('wake.countdown', { seconds: isolate(remaining) }) : t('wake.almost')}
             </p>
           </div>
         </div>

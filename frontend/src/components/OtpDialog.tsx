@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { img } from '../lib/images';
 import Pic from './Pic';
-import { localPhone, toAsciiDigits } from '../lib/format';
+import { isolate, localPhone, toAsciiDigits } from '../lib/format';
 import { btnGhost, card } from '../lib/ui';
 
 const LENGTH = 4;
@@ -94,7 +94,9 @@ export default function OtpDialog({ phone, busy = false, onVerified, onCancel }:
         <Pic src={img.otp} className="mx-auto h-14 w-14" />
         <h2 className="mt-3 font-display text-lg font-bold">{t('otp.title')}</h2>
         <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          {phone ? t('otp.sentTo', { count: LENGTH }) : t('otp.sentToAccount', { count: LENGTH })}
+          {phone
+            ? t('otp.sentTo', { count: isolate(LENGTH) })
+            : t('otp.sentToAccount', { count: isolate(LENGTH) })}
         </p>
         {phone && (
           <p
@@ -132,7 +134,7 @@ export default function OtpDialog({ phone, busy = false, onVerified, onCancel }:
 
         <p className="mt-3 text-xs text-stone-400 dark:text-stone-500">
           {seconds > 0 ? (
-            t('otp.resendIn', { seconds })
+            t('otp.resendIn', { seconds: isolate(seconds) })
           ) : (
             <button
               onClick={() => setSeconds(RESEND_SECONDS)}
@@ -158,7 +160,7 @@ export default function OtpDialog({ phone, busy = false, onVerified, onCancel }:
 
         <p className="mt-4 flex items-start gap-1.5 text-start text-xs text-stone-400 dark:text-stone-500">
           <Pic src={img.information} className="mt-px h-4.5 w-4.5 shrink-0" />
-          {t('otp.demoNote', { count: LENGTH })}
+          {t('otp.demoNote', { count: isolate(LENGTH) })}
         </p>
       </div>
     </div>

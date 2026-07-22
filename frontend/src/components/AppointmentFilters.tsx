@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { isolate } from '../lib/format';
 import { img, statusIcon } from '../lib/images';
 import { statusStyle } from '../lib/labels';
 import { input } from '../lib/ui';
@@ -82,7 +83,10 @@ export default function AppointmentFilters({
         )}
 
         <span className="text-xs text-stone-500 dark:text-stone-400">
-          {t('filters.showing', { count: results.length, total })}
+          {t('filters.showing', {
+            count: isolate(results.length),
+            total: isolate(total),
+          })}
         </span>
 
         {active && (

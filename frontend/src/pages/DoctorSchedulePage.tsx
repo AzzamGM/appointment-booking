@@ -7,7 +7,7 @@ import { api, errorMessage } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useToast } from "../lib/toast";
 import { LOCKED_STATUSES, noteLabel } from "../lib/labels";
-import { firstName } from "../lib/format";
+import { firstName, isolate } from "../lib/format";
 import { img, specialtyIcon, userAvatar } from "../lib/images";
 import Pic from "../components/Pic";
 import BackButton from "../components/BackButton";
@@ -139,8 +139,8 @@ export default function DoctorSchedulePage() {
       <p className={`mb-4 mt-1 ${mutedText}`}>
         {total > 0
           ? t("schedule.subtitle", {
-              patients: filters.results.length,
-              days: days.length,
+              patients: isolate(filters.results.length),
+              days: isolate(days.length),
             })
           : t("schedule.empty")}
       </p>

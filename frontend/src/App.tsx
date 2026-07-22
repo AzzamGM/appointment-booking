@@ -7,6 +7,7 @@ import { useTheme } from './lib/theme';
 import { useTranslation } from 'react-i18next';
 import { LANG_SWITCH_MS, useLang, useLocalize, type Lang } from './lib/i18n';
 import { useSettings } from './lib/settings';
+import { isolate } from './lib/format';
 import { img, userAvatar } from './lib/images';
 import { useActiveAppointmentCount, useBookingNotifications } from './lib/notifications';
 import { usePageTracking } from './lib/analytics';
@@ -394,7 +395,7 @@ export default function App() {
 
   const navBadge = activeCount > 0 && (
     <span
-      title={t('nav.activeCount', { count: activeCount })}
+      title={t('nav.activeCount', { count: isolate(activeCount) })}
       className="flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white"
     >
       {activeCount}

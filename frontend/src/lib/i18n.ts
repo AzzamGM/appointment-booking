@@ -288,6 +288,7 @@ const en = {
     confirmDeclineTitle: 'Decline this request?',
     confirmDeclineYes: 'Yes, decline it',
     confirmCancelBody: "{{patient}}'s slot will be released back to the open schedule.",
+    loadFailed: "Couldn't load the schedule",
     nothingScheduled: 'Nothing on the schedule.',
     system: 'System',
     settingsUnavailable:
@@ -800,6 +801,7 @@ const ar: typeof en = {
     confirmDeclineTitle: 'رفض هذا الطلب؟',
     confirmDeclineYes: 'نعم، ارفض الطلب',
     confirmCancelBody: 'سيُعاد وقت {{patient}} إلى الجدول المتاح.',
+    loadFailed: 'تعذر تحميل الجدول',
     nothingScheduled: 'لا يوجد شيء في الجدول.',
     system: 'النظام',
     settingsUnavailable: 'إدارة الجدول (ساعات العمل المتكررة وتوليد المواعيد والإجازات) غير متاحة في هذه الشاشة بعد.',

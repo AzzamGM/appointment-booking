@@ -100,7 +100,7 @@ export default function BookingPage() {
                 {L(selectedClinic.name, selectedClinic.nameAr)}, {L(selectedClinic.city, selectedClinic.cityAr)}
               </p>
               <p className="text-xs text-stone-400 dark:text-stone-500">
-                {t('booking.doctorsAtBranch')}: {atClinic.length}
+                {t('booking.doctorsAtBranch')}: <bdi>{atClinic.length}</bdi>
               </p>
             </div>
             <button
@@ -156,7 +156,7 @@ export default function BookingPage() {
             <div className="flex-1">
               <p className="font-semibold">{t(`specialty.${specialty}`)}</p>
               <p className="text-xs text-stone-400 dark:text-stone-500">
-                {t('booking.doctorsAvailable')}: {shortlist.length}
+                {t('booking.doctorsAvailable')}: <bdi>{shortlist.length}</bdi>
               </p>
             </div>
             <button onClick={() => setSpecialty(null)} className={btnGhost}>

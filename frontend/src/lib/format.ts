@@ -27,6 +27,13 @@ export function formatMoney(amount: number): string {
   }).format(amount);
 }
 
+const LRI = '\u2066';
+const PDI = '\u2069';
+
+export function isolate(value: string | number): string {
+  return `${LRI}${value}${PDI}`;
+}
+
 const AR_WEEKDAYS = [
   'الأحد',
   'الاثنين',

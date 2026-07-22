@@ -14,7 +14,7 @@ function TimeDivider({ appointment: a }: { appointment: Appointment }) {
 
   return (
     <Divider>
-      <span dir="ltr" className="flex items-baseline gap-1 whitespace-nowrap">
+      <span className="flex items-baseline gap-1 whitespace-nowrap">
         <span className="font-mono text-sm font-bold leading-none tabular-nums">{start.clock}</span>
         <span className="text-[10px] font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
           {start.period}

@@ -11,6 +11,7 @@ import { img, specialtyIcon, userAvatar } from '../lib/images';
 import Pic from '../components/Pic';
 import BackButton from '../components/BackButton';
 import Loading from '../components/Loading';
+import ErrorState from '../components/ErrorState';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AppointmentCard, { MetaItem } from '../components/AppointmentCard';
 import AppointmentFilters from '../components/AppointmentFilters';
@@ -215,148 +216,163 @@ export default function StaffPage() {
         </div>
       )}
 
-      {pending > 0 && (
-        <div className="rise mb-4 flex items-center gap-3 rounded-xl border border-amber-200/70 bg-amber-50/70 px-4 py-2.5 dark:border-amber-800/40 dark:bg-amber-500/5">
-          <Pic src={img.notificationBell} className="h-7 w-7" />
-          <p className="text-sm text-amber-900 dark:text-amber-200">
-            {t('staff.pendingRequests')}: {pending}
-          </p>
-        </div>
-      )}
+      {appointments.isError ? (
+        <ErrorState
+          title={t('staff.loadFailed')}
+          error={appointments.error}
+          onRetry={() => appointments.refetch()}
+          retrying={appointments.isFetching}
+        />
+      ) : (
+        <>
+        {pending > 0 && (
+          <div className="rise mb-4 flex items-center gap-3 rounded-xl border border-amber-200/70 bg-amber-50/70 px-4 py-2.5 dark:border-amber-800/40 dark:bg-amber-500/5">
+            <Pic src={img.notificationBell} className="h-7 w-7" />
+            <p className="text-sm text-amber-900 dark:text-amber-200">
+              {t('staff.pendingRequests')}: <bdi>{pending}</bdi>
+            </p>
+          </div>
+        )}
 
-      {all.length > 0 && <AppointmentFilters state={filters} total={all.length} />}
+        {all.length > 0 && <AppointmentFilters state={filters} total={all.length} />}
 
-      {appointments.isLoading && (
-        <div className="space-y-2">
-          <Loading text={t('staff.loadingSchedule')} />
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className={`${card} p-3`}>
-              <div className="h-5 w-3/4 animate-pulse rounded bg-stone-200 dark:bg-stone-800" />
+        {appointments.isLoading && (
+          <div className="relative">
+            <div className="space-y-2 opacity-40" aria-hidden="true">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className={`${card} p-3`}>
+                  <div className="h-5 w-3/4 animate-pulse rounded bg-stone-200 dark:bg-stone-800" />
+                </div>
+              ))}
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loading text={t('staff.loadingSchedule')} />
+            </div>
+          </div>
+        )}
+
+        {appointments.data?.appointments.length === 0 && (
+          <div className={`${card} flex flex-col items-center gap-3 p-8 text-center`}>
+            <Pic src={img.calendar} className="h-12 w-12 opacity-80" />
+            <p className={mutedText}>{t('staff.nothingScheduled')}</p>
+          </div>
+        )}
+
+        {all.length > 0 && filters.results.length === 0 && (
+          <div className={`${card} flex flex-col items-center gap-3 p-8 text-center`}>
+            <Pic src={img.search} className="h-12 w-12 opacity-60" />
+            <p className={mutedText}>{t('filters.noMatches')}</p>
+          </div>
+        )}
+
+        <div className="space-y-5">
+          {groupByDay(filters.results).map(([date, list]) => (
+            <div key={date}>
+              <DayHeading
+                date={date}
+                label={`${list.length} ${t(
+                  list.length === 1
+                    ? 'appointments.appointmentOnDay'
+                    : 'appointments.appointmentsOnDay',
+                )}`}
+              />
+              <div className="space-y-2">
+          {list.map((a, i) => (
+            <AppointmentCard
+              key={a.id}
+              appointment={a}
+              index={i}
+              avatar={userAvatar('PATIENT', a.patient.gender)}
+              name={firstName(L(a.patient.fullName, a.patient.fullNameAr))}
+              nameTitle={L(a.patient.fullName, a.patient.fullNameAr)}
+              subtitle={L(a.service.name, a.service.nameAr)}
+              meta={
+                <>
+                  {a.patient.isGuest && (
+                    <span
+                      title={a.patient.email ?? undefined}
+                      className="w-fit shrink-0 rounded-md bg-stone-100 px-1.5 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-300"
+                    >
+                      {t('common.guest')}
+                    </span>
+                  )}
+                  {a.patient.phone && (
+                    <MetaItem icon={img.phoneCall}>
+                      <span dir="ltr">{a.patient.phone}</span>
+                    </MetaItem>
+                  )}
+                  <MetaItem icon={specialtyIcon[a.doctor.specialty]} muted={false}>
+                    {t(`specialty.${a.doctor.specialty}`)}
+                  </MetaItem>
+                  <MetaItem
+                    icon={img.maleDoctor}
+                    title={L(a.doctor.name, a.doctor.nameAr)}
+                  >
+                    {firstName(L(a.doctor.name, a.doctor.nameAr))}
+                  </MetaItem>
+                  <MetaItem icon={img.locationPin} title={L(a.clinic.name, a.clinic.nameAr)}>
+                    {L(a.clinic.code, a.clinic.cityAr)}
+                  </MetaItem>
+                </>
+              }
+              footer={
+                <>
+                  <button
+                    className={`flex items-center gap-1.5 ${btnGhost}`}
+                    onClick={() => navigate(`/appointments/${a.id}`)}
+                  >
+                    <Pic src={img.view} className="h-5 w-5" />
+                    {t('appointments.viewSummary')}
+                  </button>
+                  {a.status === 'REQUESTED' &&
+                    actionButton(a, 'confirm', img.approved, t('staff.confirm'))}
+                  {a.status === 'CONFIRMED' &&
+                    actionButton(a, 'check-in', img.idCard, t('staff.checkIn'))}
+                  {(a.status === 'CHECKED_IN' || a.status === 'IN_PROGRESS') && (
+                    <span className="flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500">
+                      <Pic
+                        src={a.status === 'IN_PROGRESS' ? img.checkUp : img.hourglass}
+                        className="h-5 w-5"
+                      />
+                      {t(a.status === 'IN_PROGRESS' ? 'staff.withDoctor' : 'staff.waiting')}
+                    </span>
+                  )}
+                  {a.status === 'REQUESTED' &&
+                    actionButton(a, 'decline', img.unapproved, t('staff.decline'))}
+                  {a.status === 'CONFIRMED' &&
+                    actionButton(a, 'no-show', img.noShow, t('staff.noShow'))}
+                </>
+              }
+            >
+              {a.prescriptions.length > 0 && (
+                <div>
+                  <Divider align="start">
+                    <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
+                      <Pic src={img.pills} className="h-4.5 w-4.5" />
+                      {t('appointments.prescribed')}
+                    </span>
+                  </Divider>
+                  <div className="flex flex-wrap gap-x-5 gap-y-1 px-2.5">
+                    {a.prescriptions.map((p) => (
+                      <span
+                        key={p.id}
+                        className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400"
+                      >
+                        <Pic src={img.medicine} className="h-4 w-4" />
+                        {p.medication} {p.dosage}, {p.frequency}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </AppointmentCard>
+          ))}
+              </div>
             </div>
           ))}
         </div>
+        </>
       )}
-
-      {appointments.data?.appointments.length === 0 && (
-        <div className={`${card} flex flex-col items-center gap-3 p-8 text-center`}>
-          <Pic src={img.calendar} className="h-12 w-12 opacity-80" />
-          <p className={mutedText}>{t('staff.nothingScheduled')}</p>
-        </div>
-      )}
-
-      {all.length > 0 && filters.results.length === 0 && (
-        <div className={`${card} flex flex-col items-center gap-3 p-8 text-center`}>
-          <Pic src={img.search} className="h-12 w-12 opacity-60" />
-          <p className={mutedText}>{t('filters.noMatches')}</p>
-        </div>
-      )}
-
-      <div className="space-y-5">
-        {groupByDay(filters.results).map(([date, list]) => (
-          <div key={date}>
-            <DayHeading
-              date={date}
-              label={`${list.length} ${t(
-                list.length === 1
-                  ? 'appointments.appointmentOnDay'
-                  : 'appointments.appointmentsOnDay',
-              )}`}
-            />
-            <div className="space-y-2">
-        {list.map((a, i) => (
-          <AppointmentCard
-            key={a.id}
-            appointment={a}
-            index={i}
-            avatar={userAvatar('PATIENT', a.patient.gender)}
-            name={firstName(L(a.patient.fullName, a.patient.fullNameAr))}
-            nameTitle={L(a.patient.fullName, a.patient.fullNameAr)}
-            subtitle={L(a.service.name, a.service.nameAr)}
-            meta={
-              <>
-                {a.patient.isGuest && (
-                  <span
-                    title={a.patient.email ?? undefined}
-                    className="w-fit shrink-0 rounded-md bg-stone-100 px-1.5 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-300"
-                  >
-                    {t('common.guest')}
-                  </span>
-                )}
-                {a.patient.phone && (
-                  <MetaItem icon={img.phoneCall}>
-                    <span dir="ltr">{a.patient.phone}</span>
-                  </MetaItem>
-                )}
-                <MetaItem icon={specialtyIcon[a.doctor.specialty]} muted={false}>
-                  {t(`specialty.${a.doctor.specialty}`)}
-                </MetaItem>
-                <MetaItem
-                  icon={img.maleDoctor}
-                  title={L(a.doctor.name, a.doctor.nameAr)}
-                >
-                  {firstName(L(a.doctor.name, a.doctor.nameAr))}
-                </MetaItem>
-                <MetaItem icon={img.locationPin} title={L(a.clinic.name, a.clinic.nameAr)}>
-                  {L(a.clinic.code, a.clinic.cityAr)}
-                </MetaItem>
-              </>
-            }
-            footer={
-              <>
-                <button
-                  className={`flex items-center gap-1.5 ${btnGhost}`}
-                  onClick={() => navigate(`/appointments/${a.id}`)}
-                >
-                  <Pic src={img.view} className="h-5 w-5" />
-                  {t('appointments.viewSummary')}
-                </button>
-                {a.status === 'REQUESTED' &&
-                  actionButton(a, 'confirm', img.approved, t('staff.confirm'))}
-                {a.status === 'CONFIRMED' &&
-                  actionButton(a, 'check-in', img.idCard, t('staff.checkIn'))}
-                {(a.status === 'CHECKED_IN' || a.status === 'IN_PROGRESS') && (
-                  <span className="flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500">
-                    <Pic
-                      src={a.status === 'IN_PROGRESS' ? img.checkUp : img.hourglass}
-                      className="h-5 w-5"
-                    />
-                    {t(a.status === 'IN_PROGRESS' ? 'staff.withDoctor' : 'staff.waiting')}
-                  </span>
-                )}
-                {a.status === 'REQUESTED' &&
-                  actionButton(a, 'decline', img.unapproved, t('staff.decline'))}
-                {a.status === 'CONFIRMED' &&
-                  actionButton(a, 'no-show', img.noShow, t('staff.noShow'))}
-              </>
-            }
-          >
-            {a.prescriptions.length > 0 && (
-              <div>
-                <Divider align="start">
-                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
-                    <Pic src={img.pills} className="h-4.5 w-4.5" />
-                    {t('appointments.prescribed')}
-                  </span>
-                </Divider>
-                <div className="flex flex-wrap gap-x-5 gap-y-1 px-2.5">
-                  {a.prescriptions.map((p) => (
-                    <span
-                      key={p.id}
-                      className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400"
-                    >
-                      <Pic src={img.medicine} className="h-4 w-4" />
-                      {p.medication} {p.dosage}, {p.frequency}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </AppointmentCard>
-        ))}
-            </div>
-          </div>
-        ))}
-      </div>
 
       {confirming && (
         <ConfirmDialog

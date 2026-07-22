@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import i18n from '../lib/i18n';
 import { img } from '../lib/images';
-import { toAsciiDigits } from '../lib/format';
+import { isolate, toAsciiDigits } from '../lib/format';
 import Pic from './Pic';
 import { input, label } from '../lib/ui';
 
@@ -49,7 +49,10 @@ export function guestErrors(
   if (!digits) {
     errors.phone = i18n.t('guest.errPhoneEmpty');
   } else if (digits.length !== NATIONAL_DIGITS) {
-    errors.phone = i18n.t('guest.errPhoneDigits', { count: NATIONAL_DIGITS, code: DIAL_CODE });
+    errors.phone = i18n.t('guest.errPhoneDigits', {
+      count: isolate(NATIONAL_DIGITS),
+      code: isolate(DIAL_CODE),
+    });
   } else if (!digits.startsWith('5')) {
     errors.phone = i18n.t('guest.errPhoneStart');
   }
