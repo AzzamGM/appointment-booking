@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../lib/auth';
+import { useLocalize } from '../lib/i18n';
 import { useActiveAppointmentCount } from '../lib/notifications';
 import { firstName } from '../lib/format';
 import { img, userAvatar } from '../lib/images';
@@ -96,6 +97,7 @@ const FEATURES = [
 
 export default function HomePage() {
   const { t } = useTranslation();
+  const L = useLocalize();
   const { user } = useAuth();
   const activeCount = useActiveAppointmentCount();
 
@@ -124,7 +126,9 @@ export default function HomePage() {
 
             <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
               {user
-                ? t('home.welcomeBack', { name: firstName(user.fullName) })
+                ? t('home.welcomeBack', {
+                    name: firstName(L(user.fullName, user.fullNameAr)),
+                  })
                 : t('home.heroTitle')}
             </h1>
             <p className={`mt-2 max-w-prose ${mutedText}`}>

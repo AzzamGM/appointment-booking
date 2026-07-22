@@ -5,7 +5,7 @@ import { api } from './lib/api';
 import { useAuth } from './lib/auth';
 import { useTheme } from './lib/theme';
 import { useTranslation } from 'react-i18next';
-import { LANG_SWITCH_MS, useLang, type Lang } from './lib/i18n';
+import { LANG_SWITCH_MS, useLang, useLocalize, type Lang } from './lib/i18n';
 import { useSettings } from './lib/settings';
 import { img, userAvatar } from './lib/images';
 import { useActiveAppointmentCount, useBookingNotifications } from './lib/notifications';
@@ -55,6 +55,7 @@ function SettingsPanel({
   const { notifications, setNotifications } = useSettings();
   const { t } = useTranslation();
   const { lang } = useLang();
+  const L = useLocalize();
 
   const row = 'flex items-center gap-2.5 rounded-lg px-2.5 py-2';
   const setOpen = (_: boolean) => onClose();
@@ -70,7 +71,9 @@ function SettingsPanel({
                 className="h-11 w-11 rounded-full bg-stone-100 ring-2 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700"
               />
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{user.fullName}</p>
+                <p className="truncate text-sm font-semibold">
+                  {L(user.fullName, user.fullNameAr)}
+                </p>
                 <p className="truncate text-xs text-stone-500 dark:text-stone-400">{user.email}</p>
                 <span className="mt-1 inline-block rounded bg-teal-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
                   {user.role.toLowerCase()}
@@ -191,6 +194,7 @@ function ProfileMenu({
 }) {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const L = useLocalize();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -236,7 +240,7 @@ function ProfileMenu({
           {!compact && (
             <>
               <span className="text-sm text-stone-600 transition-colors group-hover:text-stone-900 dark:text-stone-300 dark:group-hover:text-white">
-                {user.fullName}
+                {L(user.fullName, user.fullNameAr)}
               </span>
               <Pic src={img.settings} className="h-6 w-6 opacity-70" />
             </>

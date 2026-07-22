@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
-import { api, clearToken, setToken, USER_KEY } from './api';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { api, clearToken, getToken, setToken, USER_KEY } from './api';
 import { storedLang } from './i18n';
 import type { AuthResponse, Gender, PublicUser } from '../types';
 
@@ -30,6 +30,21 @@ function loadStoredUser(): PublicUser | null {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<PublicUser | null>(loadStoredUser);
+
+  useEffect(() => {
+    if (!getToken()) return;
+    let cancelled = false;
+    api<PublicUser>('/users/me')
+      .then((fresh) => {
+        if (cancelled) return;
+        localStorage.setItem(USER_KEY, JSON.stringify(fresh));
+        setUser(fresh);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const applyAuth = (res: AuthResponse) => {
     setToken(res.token);
