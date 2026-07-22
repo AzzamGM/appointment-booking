@@ -30,10 +30,32 @@ interface RequestOptions {
   body?: unknown;
 }
 
+const SERVER_MESSAGES: Record<string, string> = {
+  'An account with this email already exists': 'server.emailTaken',
+  'Invalid email or password': 'server.badCredentials',
+  'Your current password is incorrect': 'server.wrongPassword',
+  'Enter your current password to set a new one': 'server.needCurrentPassword',
+  'Your account no longer exists. Please log in again.': 'server.accountGone',
+  'This slot is no longer available': 'server.slotTaken',
+  'This slot was just booked by someone else': 'server.slotTaken',
+  'This slot is in the past': 'server.slotPast',
+  'Only staff may book on behalf of another patient': 'server.staffOnlyBooking',
+  'patientId does not refer to a patient account': 'server.notAPatient',
+  'This appointment belongs to another patient': 'server.otherPatient',
+  'This appointment is not on your schedule': 'server.notOnSchedule',
+  'Only the doctor seeing the patient can manage prescriptions': 'server.prescriptionOwner',
+  'Only the doctor seeing the patient can start or complete a visit': 'server.visitOwner',
+  'Doctors can only start, complete, or no-show a visit': 'server.doctorActions',
+  'You do not have permission to do that': 'server.forbidden',
+  'Validation failed': 'server.validation',
+};
+
 export function errorMessage(err: unknown, fallback?: string): string {
   const fb = fallback ?? i18n.t('errors.generic');
   if (err instanceof ApiError) {
     if (err.status === 0) return i18n.t('errors.network');
+    const key = SERVER_MESSAGES[err.message];
+    if (key) return i18n.t(key);
     if (err.status === 401) return i18n.t('errors.unauthorized');
     if (err.status === 404) return i18n.t('errors.notFound');
     if (err.status >= 500) return i18n.t('errors.server');

@@ -162,7 +162,7 @@ patientsRouter.get(
     const patients = await prisma.user.findMany({
       where: { role: 'PATIENT' },
       orderBy: { fullName: 'asc' },
-      select: { id: true, fullName: true, email: true },
+      select: { id: true, fullName: true, fullNameAr: true, email: true },
     });
     res.json({ patients });
   }),

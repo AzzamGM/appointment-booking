@@ -9,6 +9,7 @@ import { useToast } from '../lib/toast';
 import { firstName, formatDate, formatTime } from '../lib/format';
 import { img, specialtyIcon, userAvatar } from '../lib/images';
 import Pic from '../components/Pic';
+import BackButton from '../components/BackButton';
 import Loading from '../components/Loading';
 import ConfirmDialog from '../components/ConfirmDialog';
 import AppointmentCard, { MetaItem } from '../components/AppointmentCard';
@@ -153,6 +154,7 @@ export default function StaffPage() {
 
   return (
     <div>
+      <BackButton />
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
         <h1 className={`flex items-center gap-2.5 ${pageTitle}`}>
           <Pic src={img.customerServiceAgent} className="h-10 w-10" />
@@ -173,9 +175,7 @@ export default function StaffPage() {
           <button
             className={`flex items-center gap-1.5 ${btnGhost}`}
             onClick={() =>
-              toast.info(
-                'Schedule management (recurring hours, slot generation, time off) is not available in this screen yet.',
-              )
+              toast.info(t('staff.settingsUnavailable'))
             }
           >
             <Pic src={img.settings} className="h-5 w-5" />
@@ -200,7 +200,7 @@ export default function StaffPage() {
               <li key={e.id} className="flex items-start gap-2.5 text-sm">
                 <Pic src={auditIcon(e.action)} className="mt-0.5 h-5 w-5" />
                 <span className="min-w-0">
-                  <span className="font-medium">{e.user?.fullName ?? 'System'}</span>{' '}
+                  <span className="font-medium">{e.user?.fullName ?? t('staff.system')}</span>{' '}
                   <span className="text-stone-500 dark:text-stone-400">{e.action}</span>
                   {e.detail && (
                     <span className="text-stone-500 dark:text-stone-400"> · {e.detail}</span>
@@ -240,7 +240,7 @@ export default function StaffPage() {
       {appointments.data?.appointments.length === 0 && (
         <div className={`${card} flex flex-col items-center gap-3 p-8 text-center`}>
           <Pic src={img.calendar} className="h-12 w-12 opacity-80" />
-          <p className={mutedText}>Nothing on the schedule.</p>
+          <p className={mutedText}>{t('staff.nothingScheduled')}</p>
         </div>
       )}
 
@@ -269,8 +269,8 @@ export default function StaffPage() {
             appointment={a}
             index={i}
             avatar={userAvatar('PATIENT', a.patient.gender)}
-            name={firstName(a.patient.fullName)}
-            nameTitle={a.patient.fullName}
+            name={firstName(L(a.patient.fullName, a.patient.fullNameAr))}
+            nameTitle={L(a.patient.fullName, a.patient.fullNameAr)}
             subtitle={L(a.service.name, a.service.nameAr)}
             meta={
               <>
@@ -296,7 +296,9 @@ export default function StaffPage() {
                 >
                   {firstName(L(a.doctor.name, a.doctor.nameAr))}
                 </MetaItem>
-                <MetaItem icon={img.locationPin}>{a.clinic.code}</MetaItem>
+                <MetaItem icon={img.locationPin} title={L(a.clinic.name, a.clinic.nameAr)}>
+                  {L(a.clinic.code, a.clinic.cityAr)}
+                </MetaItem>
               </>
             }
             footer={
@@ -360,7 +362,10 @@ export default function StaffPage() {
         <ConfirmDialog
           title={t(ACTION_COPY[confirming.action].title)}
           message={t(ACTION_COPY[confirming.action].body, {
-            patient: confirming.appointment.patient.fullName,
+            patient: L(
+              confirming.appointment.patient.fullName,
+              confirming.appointment.patient.fullNameAr,
+            ),
           })}
           confirmLabel={t(ACTION_COPY[confirming.action].yes)}
           cancelLabel={t('common.back')}

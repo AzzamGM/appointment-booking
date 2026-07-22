@@ -7,6 +7,7 @@ import { api } from '../lib/api';
 import { SPECIALTIES } from '../lib/labels';
 import { doctorAvatar, img, specialtyIcon } from '../lib/images';
 import Pic from '../components/Pic';
+import BackButton from '../components/BackButton';
 import Loading from '../components/Loading';
 import StepBadge from '../components/StepBadge';
 import ErrorState from '../components/ErrorState';
@@ -68,6 +69,7 @@ export default function BookingPage() {
 
   return (
     <div>
+      <BackButton />
       <h1 className={pageTitle}>{t('booking.title')}</h1>
       <p className={`mt-1 ${mutedText}`}>
         {t('booking.subtitle')}

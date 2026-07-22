@@ -73,6 +73,7 @@ export function toAppointmentDto(appt: AppointmentWithDetails, viewerRole?: Requ
       ? {
           id: appt.patient.id,
           fullName: appt.patient.fullName,
+          fullNameAr: appt.patient.fullNameAr,
           gender: appt.patient.gender,
           isGuest: false,
         }

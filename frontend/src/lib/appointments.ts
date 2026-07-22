@@ -29,6 +29,7 @@ function haystack(a: Appointment): string {
   return [
     a.reference,
     a.patient.fullName,
+    a.patient.fullNameAr,
     a.doctor.name,
     a.doctor.nameAr,
     a.service.name,

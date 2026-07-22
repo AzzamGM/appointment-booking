@@ -100,7 +100,7 @@ export default function GuestDetails({
           value={value.fullName}
           onChange={(e) => set('fullName', e.target.value)}
           autoComplete="name"
-          placeholder="Sara Al-Harbi"
+          placeholder={t('guest.namePlaceholder')}
         />
         {errorText('fullName')}
       </label>

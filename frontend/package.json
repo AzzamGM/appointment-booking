@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emran-alhaddad/saudi-riyal-font": "^1.1.0",
     "@tanstack/react-query": "^5.62.0",
     "i18next": "^26.3.6",
     "react": "^18.3.1",

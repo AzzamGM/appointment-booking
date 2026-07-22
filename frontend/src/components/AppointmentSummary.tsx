@@ -1,13 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import { useLocalize } from '../lib/i18n';
-import { formatDate, formatMoney, formatTime } from '../lib/format';
+import { formatDate, formatTime } from '../lib/format';
 import { doctorAvatar, img, serviceIcon, specialtyIcon, statusIcon, userAvatar } from '../lib/images';
-import { statusStyle } from '../lib/labels';
+import { noteLabel, statusStyle } from '../lib/labels';
 import { useAuth } from '../lib/auth';
 import Pic from './Pic';
 import Divider from './Divider';
 import ReferenceChip from './ReferenceChip';
 import Prescriptions from './Prescriptions';
+import Money from './Money';
 import type { Appointment } from '../types';
 
 export default function AppointmentSummary({ appointment: a }: { appointment: Appointment }) {
@@ -50,7 +51,7 @@ export default function AppointmentSummary({ appointment: a }: { appointment: Ap
         </span>
         <span className="flex items-center gap-2">
           <Pic src={img.clock} className="h-5 w-5 shrink-0" />
-          {formatDate(a.startAt)} at {formatTime(a.startAt)}
+          {formatDate(a.startAt)} {t('common.at')} {formatTime(a.startAt)}
         </span>
         <span className="flex items-center gap-2">
           <Pic src={img.mapLocation} className="h-5 w-5 shrink-0" />
@@ -58,12 +59,12 @@ export default function AppointmentSummary({ appointment: a }: { appointment: Ap
         </span>
         <span className="flex items-center gap-2">
           <Pic src={img.cashNote} className="h-5 w-5 shrink-0" />
-          {formatMoney(a.service.price)}
+          <Money amount={a.service.price} />
         </span>
         {a.notes && (
           <span className="flex items-center gap-2">
             <Pic src={img.paymentMethod} className="h-5 w-5 shrink-0" />
-            {a.notes}
+            {noteLabel(a.notes)}
           </span>
         )}
       </div>
@@ -86,7 +87,9 @@ export default function AppointmentSummary({ appointment: a }: { appointment: Ap
             className="h-11 w-11 shrink-0 rounded-full border border-stone-200 bg-white p-0.5 dark:border-stone-700 dark:bg-stone-800"
           />
           <div className="min-w-0">
-            <p className="truncate font-semibold">{a.patient.fullName}</p>
+            <p className="truncate font-semibold">
+              {L(a.patient.fullName, a.patient.fullNameAr)}
+            </p>
             <p className="text-xs text-stone-500 dark:text-stone-400">
               {a.patient.isGuest ? t('detail.guestBooking') : t('detail.registeredPatient')}
             </p>
@@ -98,7 +101,7 @@ export default function AppointmentSummary({ appointment: a }: { appointment: Ap
             {a.patient.email && (
               <a
                 href={`mailto:${a.patient.email}`}
-                className="flex min-w-0 items-center gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-stone-200/60 dark:hover:bg-stone-800/60"
+                className="flex w-fit min-w-0 max-w-full items-center justify-self-start gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-stone-200/60 dark:hover:bg-stone-800/60"
               >
                 <Pic src={img.email} className="h-5 w-5 shrink-0" />
                 <span className="truncate">{a.patient.email}</span>
@@ -107,7 +110,7 @@ export default function AppointmentSummary({ appointment: a }: { appointment: Ap
             {a.patient.phone && (
               <a
                 href={`tel:${a.patient.phone}`}
-                className="flex min-w-0 items-center gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-stone-200/60 dark:hover:bg-stone-800/60"
+                className="flex w-fit min-w-0 max-w-full items-center justify-self-start gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-stone-200/60 dark:hover:bg-stone-800/60"
               >
                 <Pic src={img.phoneCall} className="h-5 w-5 shrink-0" />
                 <span dir="ltr" className="truncate">

@@ -399,10 +399,6 @@ export default function App() {
 
   const navLinks = (
     <>
-      <NavLink to="/" className={navLink} end onClick={closeMenu}>
-        <Pic src={img.home} className="h-6 w-6" />
-        {t('nav.home')}
-      </NavLink>
       {user?.role !== 'DOCTOR' && (
         <NavLink to="/book" className={navLink} onClick={closeMenu}>
           <Pic src={img.addCalendar} className="h-6 w-6" />

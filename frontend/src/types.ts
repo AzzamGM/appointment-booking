@@ -22,6 +22,7 @@ export interface PublicUser {
   id: string;
   email: string;
   fullName: string;
+  fullNameAr?: string | null;
   role: Role;
   phone: string | null;
   gender: Gender | null;
@@ -120,6 +121,7 @@ export interface Appointment {
   patient: {
     id: string | null;
     fullName: string;
+    fullNameAr?: string | null;
     gender: Gender | null;
     isGuest: boolean;
     email?: string | null;
@@ -133,6 +135,7 @@ export interface Appointment {
 export interface PatientRef {
   id: string;
   fullName: string;
+  fullNameAr?: string | null;
   email: string;
 }
 

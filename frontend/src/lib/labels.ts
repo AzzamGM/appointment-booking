@@ -1,4 +1,20 @@
+import i18n from './i18n';
 import type { AppointmentStatus, Specialty } from '../types';
+
+export const PAYMENT_NOTES = {
+  clinic: 'Pay at clinic (cash or card)',
+  online: 'Paying online',
+} as const;
+
+const NOTE_KEYS: Record<string, string> = {
+  [PAYMENT_NOTES.clinic]: 'notes.payAtClinic',
+  [PAYMENT_NOTES.online]: 'notes.payOnline',
+};
+
+export function noteLabel(note: string): string {
+  const key = NOTE_KEYS[note];
+  return key ? i18n.t(key) : note;
+}
 
 export const SPECIALTIES: Specialty[] = [
   'GENERAL_PRACTICE',

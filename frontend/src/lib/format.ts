@@ -22,11 +22,23 @@ export function localPhone(raw: string): string {
 
 export function formatMoney(amount: number): string {
   return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'SAR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+const AR_WEEKDAYS = [
+  'الأحد',
+  'الاثنين',
+  'الثلاثاء',
+  'الأربعاء',
+  'الخميس',
+  'الجمعة',
+  'السبت',
+];
+
+export function arabicWeekday(date: Date): string {
+  return AR_WEEKDAYS[date.getDay()];
 }
 
 export function formatTime(iso: string): string {

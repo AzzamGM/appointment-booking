@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useLocalize } from '../lib/i18n';
 import { formatDate, formatTime } from '../lib/format';
 import { img, statusIcon } from '../lib/images';
 import type { BookingNotification, BookingNotificationsState } from '../lib/notifications';
@@ -11,23 +12,26 @@ import { mutedText } from '../lib/ui';
 
 function useNotificationText() {
   const { t } = useTranslation();
+  const L = useLocalize();
 
   return (n: BookingNotification, role: Role): { title: string; subtitle: string } => {
     const a = n.appointment;
+    const doctor = L(a.doctor.name, a.doctor.nameAr);
+    const service = L(a.service.name, a.service.nameAr);
     const names = {
-      patient: a.patient.fullName,
-      doctor: a.doctor.name,
-      service: a.service.name,
+      patient: L(a.patient.fullName, a.patient.fullNameAr),
+      doctor,
+      service,
     };
-    const when = `${formatDate(a.startAt)} at ${formatTime(a.startAt)}`;
+    const when = `${formatDate(a.startAt)} ${t('common.at')} ${formatTime(a.startAt)}`;
 
     if (n.kind === 'current') {
       const stage = a.status === 'IN_PROGRESS' ? 'withDoctor' : 'waiting';
       const who = role === 'STAFF' ? 'Staff' : role === 'DOCTOR' ? 'Doctor' : 'Patient';
-      return { title: t(`notif.${stage}${who}`, names), subtitle: a.service.name };
+      return { title: t(`notif.${stage}${who}`, names), subtitle: service };
     }
     if (n.kind === 'pending') {
-      return { title: t('notif.pending', names), subtitle: `${a.doctor.name} - ${when}` };
+      return { title: t('notif.pending', names), subtitle: `${doctor} - ${when}` };
     }
     return {
       title: t(role === 'DOCTOR' ? 'notif.upcomingDoctor' : 'notif.upcomingPatient', names),
@@ -158,7 +162,7 @@ export default function Notifications({
       title={role === 'PATIENT' ? t('notif.patientTitle') : t('notif.staffTitle')}
       className="relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-stone-100 dark:hover:bg-stone-800"
     >
-      <Pic src={img.notificationBell} alt="Notifications" className="h-6 w-6" />
+      <Pic src={img.notificationBell} alt={t('notif.title')} className="h-6 w-6" />
       {count > 0 && (
         <span className="absolute -end-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
           {count}

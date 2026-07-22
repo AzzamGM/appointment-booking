@@ -1,13 +1,15 @@
-import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useLang } from '../lib/i18n';
 import { api, errorMessage } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
 import { img } from '../lib/images';
 import { toAsciiDigits } from '../lib/format';
 import Pic from '../components/Pic';
+import BackButton from '../components/BackButton';
 import Divider from '../components/Divider';
 import {
   btnDanger,
@@ -26,11 +28,14 @@ import type { PublicUser } from '../types';
 
 export default function AccountPage() {
   const { user, setUserData, logout } = useAuth();
-  const navigate = useNavigate();
   const { t } = useTranslation();
+  const { lang } = useLang();
   const toast = useToast();
 
-  const [fullName, setFullName] = useState(user?.fullName ?? '');
+  const nameField = lang === 'ar' ? 'fullNameAr' : 'fullName';
+  const storedName = (lang === 'ar' ? user?.fullNameAr : user?.fullName) || user?.fullName || '';
+
+  const [fullName, setFullName] = useState(storedName);
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -39,10 +44,14 @@ export default function AccountPage() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [triedSubmit, setTriedSubmit] = useState(false);
 
+  useEffect(() => {
+    setFullName(storedName);
+  }, [storedName]);
+
   const save = useMutation({
     mutationFn: () => {
       const body: Record<string, string> = {};
-      if (fullName.trim() !== user?.fullName) body.fullName = fullName.trim();
+      if (fullName.trim() !== storedName) body[nameField] = fullName.trim();
       if ((phone || '') !== (user?.phone ?? '')) body.phone = phone.trim();
       if (newPassword) {
         body.currentPassword = currentPassword;
@@ -82,7 +91,7 @@ export default function AccountPage() {
   }
 
   const dirty =
-    fullName.trim() !== user.fullName ||
+    fullName.trim() !== storedName ||
     (phone || '') !== (user.phone ?? '') ||
     newPassword.length > 0;
 
@@ -113,26 +122,7 @@ export default function AccountPage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <button
-        onClick={() => navigate(-1)}
-        className="mb-4 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-base font-medium text-teal-700 transition-colors hover:bg-teal-50 dark:text-teal-400 dark:hover:bg-teal-500/10"
-      >
-        <svg
-          className="rtl:rotate-180"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
-        {t('common.back')}
-      </button>
+      <BackButton />
       <h1 className={pageTitle}>{t('account.title')}</h1>
       <p className={`mt-1 ${mutedText}`}>{t('account.subtitle')}</p>
 

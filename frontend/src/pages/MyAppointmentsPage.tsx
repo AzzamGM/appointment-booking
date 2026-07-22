@@ -10,6 +10,7 @@ import { groupByDay, useAppointmentFilters } from '../lib/appointments';
 import { firstName } from '../lib/format';
 import { doctorAvatar, img, serviceIcon } from '../lib/images';
 import Pic from '../components/Pic';
+import BackButton from '../components/BackButton';
 import Loading from '../components/Loading';
 import DayHeading from '../components/DayHeading';
 import Divider from '../components/Divider';
@@ -156,6 +157,7 @@ export default function MyAppointmentsPage() {
 
   return (
     <div>
+      <BackButton />
       <h1 className={`mb-4 ${pageTitle}`}>{t('appointments.title')}</h1>
 
       {all.length > 0 && <AppointmentFilters state={filters} total={all.length} />}

@@ -12,6 +12,7 @@ export function toPublicUser(user: User) {
     id: user.id,
     email: user.email,
     fullName: user.fullName,
+    fullNameAr: user.fullNameAr,
     role: user.role,
     phone: user.phone,
     gender: user.gender,
@@ -22,6 +23,7 @@ export async function signup(input: {
   email: string;
   password: string;
   fullName: string;
+  fullNameAr?: string;
   phone?: string;
   gender?: Gender;
 }) {
@@ -38,6 +40,7 @@ export async function signup(input: {
       email,
       passwordHash,
       fullName: input.fullName.trim(),
+      fullNameAr: input.fullNameAr?.trim() || undefined,
       role: 'PATIENT',
       phone: input.phone?.trim() || undefined,
       gender: input.gender,

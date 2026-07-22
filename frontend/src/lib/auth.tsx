@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { api, clearToken, setToken, USER_KEY } from './api';
+import { storedLang } from './i18n';
 import type { AuthResponse, Gender, PublicUser } from '../types';
 
 interface AuthContextValue {
@@ -52,10 +53,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     phone?: string,
     gender?: Gender,
   ) => {
+    const fullNameAr = storedLang() === 'ar' ? fullName : undefined;
     applyAuth(
       await api<AuthResponse>('/auth/signup', {
         method: 'POST',
-        body: { email, password, fullName, phone, gender },
+        body: { email, password, fullName, fullNameAr, phone, gender },
       }),
     );
   };

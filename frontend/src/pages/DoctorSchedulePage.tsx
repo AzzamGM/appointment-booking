@@ -6,10 +6,11 @@ import { useLocalize } from "../lib/i18n";
 import { api, errorMessage } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { useToast } from "../lib/toast";
-import { LOCKED_STATUSES } from "../lib/labels";
+import { LOCKED_STATUSES, noteLabel } from "../lib/labels";
 import { firstName } from "../lib/format";
 import { img, specialtyIcon, userAvatar } from "../lib/images";
 import Pic from "../components/Pic";
+import BackButton from "../components/BackButton";
 import Loading from "../components/Loading";
 import Prescriptions from "../components/Prescriptions";
 import DayHeading from "../components/DayHeading";
@@ -130,6 +131,7 @@ export default function DoctorSchedulePage() {
 
   return (
     <div>
+      <BackButton />
       <h1 className={`flex items-center gap-2.5 ${pageTitle}`}>
         <Pic src={img.checkUp} className="h-10 w-10" />
         {t("schedule.title")}
@@ -198,8 +200,8 @@ export default function DoctorSchedulePage() {
                     appointment={a}
                     index={i}
                     avatar={userAvatar("PATIENT", a.patient.gender)}
-                    name={firstName(a.patient.fullName)}
-                    nameTitle={a.patient.fullName}
+                    name={firstName(L(a.patient.fullName, a.patient.fullNameAr))}
+                    nameTitle={L(a.patient.fullName, a.patient.fullNameAr)}
                     subtitle={L(a.service.name, a.service.nameAr)}
                     meta={
                       <>
@@ -213,8 +215,8 @@ export default function DoctorSchedulePage() {
                           {L(a.clinic.name, a.clinic.nameAr)}
                         </MetaItem>
                         {a.notes && (
-                          <MetaItem icon={img.information} title={a.notes}>
-                            {a.notes}
+                          <MetaItem icon={img.information} title={noteLabel(a.notes)}>
+                            {noteLabel(a.notes)}
                           </MetaItem>
                         )}
                       </>
@@ -281,7 +283,10 @@ export default function DoctorSchedulePage() {
         <ConfirmDialog
           title={t(ACTION_COPY[confirming.action].title)}
           message={t(ACTION_COPY[confirming.action].body, {
-            patient: confirming.appointment.patient.fullName,
+            patient: L(
+              confirming.appointment.patient.fullName,
+              confirming.appointment.patient.fullNameAr,
+            ),
           })}
           confirmLabel={t(ACTION_COPY[confirming.action].yes)}
           cancelLabel={t("common.back")}

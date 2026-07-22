@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DayPicker } from 'react-day-picker';
 import { arSA } from 'react-day-picker/locale';
@@ -10,7 +10,8 @@ import { api, errorMessage } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
 
-import { formatDate, formatMoney, formatTime } from '../lib/format';
+import { arabicWeekday, formatDate, formatTime } from '../lib/format';
+import { PAYMENT_NOTES } from '../lib/labels';
 import { doctorAvatar, img, serviceIcon, specialtyIcon } from '../lib/images';
 import Pic from '../components/Pic';
 import Loading from '../components/Loading';
@@ -27,6 +28,8 @@ import Fade from '../components/Fade';
 import OtpDialog from '../components/OtpDialog';
 import ErrorState from '../components/ErrorState';
 import AppointmentSummary from '../components/AppointmentSummary';
+import Money from '../components/Money';
+import BackButton from '../components/BackButton';
 import { revealStep } from '../lib/scroll';
 import { btnAccent, btnGhost, btnPrimaryFlat, card, label, mutedText, pageTitle } from '../lib/ui';
 import type {
@@ -56,14 +59,14 @@ const PAYMENT_OPTIONS: Array<{
     icon: img.paymentMethod,
     titleKey: 'book.payAtClinic',
     hintKey: 'book.payAtClinicHint',
-    note: 'Pay at clinic (cash or card)',
+    note: PAYMENT_NOTES.clinic,
   },
   {
     value: 'online',
     icon: img.creditCard,
     titleKey: 'book.payOnline',
     hintKey: 'book.payOnlineHint',
-    note: 'Paying online',
+    note: PAYMENT_NOTES.online,
   },
 ];
 
@@ -82,7 +85,7 @@ export default function BookDoctorPage() {
   const { t } = useTranslation();
   const L = useLocalize();
   const { lang } = useLang();
-  const navigate = useNavigate();
+
   const toast = useToast();
   const queryClient = useQueryClient();
 
@@ -272,26 +275,7 @@ export default function BookDoctorPage() {
 
   return (
     <div>
-      <button
-        onClick={() => navigate(-1)}
-        className="mb-4 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-base font-medium text-teal-700 transition-colors hover:bg-teal-50 dark:text-teal-400 dark:hover:bg-teal-500/10"
-      >
-        <svg
-          className="rtl:rotate-180"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
-        {t('common.back')}
-      </button>
+      <BackButton to={-1} />
       <div className="mb-6 flex items-center gap-4">
         <Pic
           src={doctorAvatar(doc.name)}
@@ -316,9 +300,7 @@ export default function BookDoctorPage() {
             <>
               <p className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
                 <Pic src={img.caution} className="mt-px h-4.5 w-4.5 shrink-0" />
-                Keep this reference. Guest bookings cannot be viewed or cancelled online, so quote
-                it to the front desk if you need to change anything. We sent the details to{' '}
-                {guestInfo.email}.
+                {t('book.guestReferenceNote', { email: guestInfo.email })}
               </p>
 
               <div className="mt-4 rounded-xl border border-teal-200/70 bg-teal-50/60 p-4 dark:border-teal-800/50 dark:bg-teal-500/5">
@@ -328,7 +310,6 @@ export default function BookDoctorPage() {
                 </p>
                 <p className={`mt-1 ${mutedText}`}>
                   {t('book.upsellBody')}
-                  cancel your appointments without calling the clinic.
                 </p>
                 <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                   <Link
@@ -419,6 +400,7 @@ export default function BookDoctorPage() {
                     mode="single"
                     locale={lang === 'ar' ? arSA : undefined}
                     dir={lang === 'ar' ? 'rtl' : 'ltr'}
+                    formatters={lang === 'ar' ? { formatWeekdayName: arabicWeekday } : undefined}
                     month={month}
                     onMonthChange={setMonth}
                     selected={selectedDate}
@@ -561,7 +543,7 @@ export default function BookDoctorPage() {
                       { value: WALK_IN, label: t('book.walkInGuest') },
                       ...(patients.data?.patients ?? []).map((p) => ({
                         value: p.id,
-                        label: `${p.fullName} - ${p.email}`,
+                        label: `${L(p.fullName, p.fullNameAr)} - ${p.email}`,
                       })),
                     ]}
                   />
@@ -616,7 +598,7 @@ export default function BookDoctorPage() {
                         <Pic src={serviceIcon(selectedService.name)} className="h-5 w-5" />
                         {L(selectedService.name, selectedService.nameAr)}
                       </span>
-                      <span>{formatMoney(selectedService.price)}</span>
+                      <Money amount={selectedService.price} />
                     </div>
                     <div className="mt-1.5 flex items-center justify-between gap-3 text-xs text-stone-400 dark:text-stone-500">
                       <span>{t('book.appointmentLength')}</span>
@@ -626,9 +608,10 @@ export default function BookDoctorPage() {
                     </div>
                     <div className="mt-2 flex items-center justify-between gap-3 border-t border-stone-200 pt-2 font-semibold dark:border-stone-800">
                       <span>{t('book.totalDue')}</span>
-                      <span className="text-teal-700 dark:text-teal-300">
-                        {formatMoney(selectedService.price)}
-                      </span>
+                      <Money
+                        amount={selectedService.price}
+                        className="text-teal-700 dark:text-teal-300"
+                      />
                     </div>
                   </div>
                 </div>
@@ -679,7 +662,8 @@ export default function BookDoctorPage() {
                   <div className="flex items-center gap-2">
                     <span className="flex items-center gap-2 text-stone-500 dark:text-stone-400">
                       <Pic src={img.calendar} className="h-6 w-6" />
-                      {formatDate(selectedSlot.startAt)} at {formatTime(selectedSlot.startAt)}
+                      {formatDate(selectedSlot.startAt)} {t('common.at')}{' '}
+                      {formatTime(selectedSlot.startAt)}
                     </span>
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-400 dark:text-stone-500">

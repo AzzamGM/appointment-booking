@@ -90,7 +90,7 @@ export default function SignupPage() {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             autoComplete="name"
-            placeholder="Sara Al-Harbi"
+            placeholder={t('guest.namePlaceholder')}
           />
           {err('fullName') && <span className={fieldError}>{err('fullName')}</span>}
         </label>

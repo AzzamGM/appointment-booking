@@ -7,6 +7,7 @@ import { api } from '../lib/api';
 import { SPECIALTIES } from '../lib/labels';
 import { doctorAvatar, img, specialtyIcon } from '../lib/images';
 import Pic from '../components/Pic';
+import BackButton from '../components/BackButton';
 import Loading from '../components/Loading';
 import Select from '../components/Select';
 import ErrorState from '../components/ErrorState';
@@ -97,6 +98,7 @@ export default function DoctorsPage() {
 
   return (
     <div>
+      <BackButton />
       <h1 className={pageTitle}>{t('doctors.title')}</h1>
       <p className={`mt-1 ${mutedText}`}>
         {t('doctors.subtitle')}

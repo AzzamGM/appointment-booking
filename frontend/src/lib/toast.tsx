@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import i18n from './i18n';
 
 type ToastKind = 'success' | 'error' | 'info';
 
@@ -174,7 +175,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               </div>
               <button
                 onClick={() => dismiss(t.id)}
-                aria-label="Dismiss"
+                aria-label={i18n.t('common.close')}
                 className="shrink-0 rounded p-0.5 text-white/70 transition-colors hover:text-white"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

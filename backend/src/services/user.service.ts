@@ -15,6 +15,7 @@ const ACTIVE_STATUSES = [
 
 export interface UpdateProfileInput {
   fullName?: string;
+  fullNameAr?: string | null;
   phone?: string | null;
   currentPassword?: string;
   newPassword?: string;
@@ -26,9 +27,15 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
     throw new UnauthorizedError('Your account no longer exists. Please log in again.');
   }
 
-  const data: { fullName?: string; phone?: string | null; passwordHash?: string } = {};
+  const data: {
+    fullName?: string;
+    fullNameAr?: string | null;
+    phone?: string | null;
+    passwordHash?: string;
+  } = {};
 
   if (input.fullName !== undefined) data.fullName = input.fullName.trim();
+  if (input.fullNameAr !== undefined) data.fullNameAr = input.fullNameAr?.trim() || null;
   if (input.phone !== undefined) data.phone = input.phone?.trim() || null;
 
   if (input.newPassword) {

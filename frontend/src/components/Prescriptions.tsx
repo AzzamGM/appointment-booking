@@ -64,7 +64,7 @@ function PrescriptionForm({
             className={input}
             value={draft.medication}
             onChange={set('medication')}
-            placeholder="Amoxicillin"
+            placeholder={t('prescribe.medicationPlaceholder')}
             autoFocus
           />
         </label>
@@ -74,7 +74,7 @@ function PrescriptionForm({
             className={input}
             value={draft.dosage}
             onChange={set('dosage')}
-            placeholder="500 mg"
+            placeholder={t('prescribe.dosagePlaceholder')}
           />
         </label>
         <label className="block">
@@ -83,7 +83,7 @@ function PrescriptionForm({
             className={input}
             value={draft.frequency}
             onChange={set('frequency')}
-            placeholder="Twice daily for 7 days"
+            placeholder={t('prescribe.frequencyPlaceholder')}
           />
         </label>
       </div>
@@ -93,7 +93,7 @@ function PrescriptionForm({
           className={input}
           value={draft.instructions}
           onChange={set('instructions')}
-          placeholder="Take with food"
+          placeholder={t('prescribe.instructionsPlaceholder')}
         />
       </label>
       <div className="flex flex-wrap gap-2">

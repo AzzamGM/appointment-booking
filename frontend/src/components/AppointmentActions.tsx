@@ -47,7 +47,7 @@ export function VisitRating({ appointmentId }: { appointmentId: string }) {
         title={t('appointments.goodVisit')}
         className="rounded-lg p-1.5 transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
       >
-        <Pic src={img.thumbsUp} alt="Thumbs up" className="h-6 w-6" />
+        <Pic src={img.thumbsUp} alt={t('appointments.goodVisit')} className="h-6 w-6" />
       </button>
       <button
         onClick={(e) => {
@@ -57,7 +57,7 @@ export function VisitRating({ appointmentId }: { appointmentId: string }) {
         title={t('appointments.notGreat')}
         className="rounded-lg p-1.5 transition-colors hover:bg-rose-50 dark:hover:bg-rose-500/10"
       >
-        <Pic src={img.thumbDown} alt="Thumbs down" className="h-6 w-6" />
+        <Pic src={img.thumbDown} alt={t('appointments.notGreat')} className="h-6 w-6" />
       </button>
     </span>
   );
@@ -158,7 +158,7 @@ export default function AppointmentActions({
   return (
     <div ref={ref} className="relative h-10 w-14 shrink-0" onClick={(e) => e.stopPropagation()}>
       <div
-        className={`absolute end-0 top-0 flex w-14 flex-col items-center rounded-2xl border transition-colors ${
+        className={`absolute end-0 top-0 flex w-12 flex-col items-center rounded-2xl border transition-colors ${
           open
             ? 'z-30 border-stone-200/80 bg-white/95 shadow-xl ring-1 ring-stone-900/5 backdrop-blur dark:border-stone-700 dark:bg-stone-900/95 dark:ring-black/40'
             : 'border-stone-200 hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800'

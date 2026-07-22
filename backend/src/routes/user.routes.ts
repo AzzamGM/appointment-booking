@@ -7,6 +7,7 @@ import * as userService from '../services/user.service';
 const updateProfileSchema = z
   .object({
     fullName: z.string().min(1).max(100).optional(),
+    fullNameAr: z.string().min(1).max(100).optional(),
     phone: z
       .string()
       .trim()
