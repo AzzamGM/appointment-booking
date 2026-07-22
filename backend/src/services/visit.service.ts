@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { env } from '../lib/env';
 import { clientIp, headerCountry, locate } from './geo.service';
@@ -20,6 +21,14 @@ function hashIp(ip: string): string {
   return createHash('sha256').update(`${env.JWT_SECRET}:${ip}`).digest('hex').slice(0, 32);
 }
 
+function isMissingUser(err: unknown): boolean {
+  return (
+    err instanceof Prisma.PrismaClientKnownRequestError &&
+    err.code === 'P2003' &&
+    String(err.meta?.constraint ?? '').includes('userId')
+  );
+}
+
 export async function recordVisit(input: RecordVisitInput, context: VisitContext): Promise<void> {
   try {
     const ip = clientIp(context.headers, context.socketIp);
@@ -27,22 +36,29 @@ export async function recordVisit(input: RecordVisitInput, context: VisitContext
     const geo = fromHeader ? { country: fromHeader, city: null } : await locate(ip);
     const userAgent = context.headers['user-agent'];
 
-    await prisma.visit.create({
-      data: {
-        sessionId: input.sessionId,
-        path: input.path.slice(0, 200),
-        referrer: input.referrer?.slice(0, 300) || null,
-        language: input.language?.slice(0, 10) || null,
-        userAgent: typeof userAgent === 'string' ? userAgent.slice(0, 300) : null,
-        country: geo.country,
-        city: geo.city,
-        ipHash: ip ? hashIp(ip) : null,
-        userId: context.userId ?? null,
-      },
-    });
+    const data = {
+      sessionId: input.sessionId,
+      path: input.path.slice(0, 200),
+      referrer: input.referrer?.slice(0, 300) || null,
+      language: input.language?.slice(0, 10) || null,
+      userAgent: typeof userAgent === 'string' ? userAgent.slice(0, 300) : null,
+      country: geo.country,
+      city: geo.city,
+      ipHash: ip ? hashIp(ip) : null,
+      userId: context.userId ?? null,
+    };
+
+    let attributed = !!data.userId;
+    try {
+      await prisma.visit.create({ data });
+    } catch (err) {
+      if (!isMissingUser(err)) throw err;
+      attributed = false;
+      await prisma.visit.create({ data: { ...data, userId: null } });
+    }
 
     const where = [geo.city, geo.country].filter(Boolean).join(', ') || 'unknown';
-    const who = context.userId ? `user ${context.userId}` : 'guest';
+    const who = attributed ? `user ${context.userId}` : 'guest';
     console.log(`[visit] ${input.path} - ${where} - ${who} - session ${input.sessionId}`);
   } catch (err) {
     console.error('visit write failed:', err);
