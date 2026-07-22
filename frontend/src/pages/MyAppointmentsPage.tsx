@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -103,7 +103,7 @@ function PatientAppointmentCard({
               <p key={p.id} className="flex items-start gap-2 text-sm">
                 <Pic src={img.medicine} className="mt-0.5 h-5 w-5 shrink-0" />
                 <span>
-                  <span className="font-medium">{p.medication}</span> — {p.dosage}, {p.frequency}
+                  <span className="font-medium">{p.medication}</span> · {p.dosage}, {p.frequency}
                   {p.instructions ? `. ${p.instructions}` : ''}
                   <span className="ms-1 text-xs text-stone-400 dark:text-stone-500">
                     ({p.prescribedBy})
@@ -181,7 +181,7 @@ export default function MyAppointmentsPage() {
         <div className={`${card} flex flex-col items-center gap-4 p-10 text-center`}>
           <Pic src={img.doctorAppointment} className="h-20 w-20 opacity-90" />
           <p className={mutedText}>{t('appointments.none')}</p>
-          <Link to="/" className={`flex items-center gap-2 ${btnPrimary}`}>
+          <Link to="/book" className={`flex items-center gap-2 ${btnPrimary}`}>
             <Pic src={img.addCalendar} className="h-5 w-5" />
             {t('appointments.bookOne')}
           </Link>

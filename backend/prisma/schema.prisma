@@ -58,6 +58,7 @@ model User {
   bookedAppointments Appointment[]  @relation("BookedByUser")
   prescriptions      Prescription[] @relation("PrescribedBy")
   auditLogs          AuditLog[]
+  visits             Visit[]
 }
 
 model Clinic {
@@ -200,6 +201,25 @@ model Prescription {
   createdAt      DateTime @default(now())
 
   @@index([appointmentId])
+}
+
+model Visit {
+  id        String   @id @default(cuid())
+  sessionId String
+  path      String
+  referrer  String?
+  country   String?
+  city      String?
+  language  String?
+  userAgent String?
+  ipHash    String?
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([country, createdAt])
+  @@index([sessionId])
 }
 
 model AuditLog {

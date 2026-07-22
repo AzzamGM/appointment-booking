@@ -10,11 +10,13 @@ import {
 } from './routes/appointments.routes';
 import { clinicsRouter, servicesRouter } from './routes/meta.routes';
 import { usersRouter } from './routes/user.routes';
+import { analyticsRouter } from './routes/analytics.routes';
 import { errorHandler, notFoundHandler } from './middleware/errors';
 
 export function createApp() {
   const app = express();
 
+  app.set('trust proxy', true);
   app.use(cors());
   app.use(express.json());
 
@@ -29,6 +31,7 @@ export function createApp() {
   app.use('/api/patients', patientsRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/audit', auditRouter);
+  app.use('/api/analytics', analyticsRouter);
   app.use('/api/clinics', clinicsRouter);
   app.use('/api/services', servicesRouter);
 

@@ -9,12 +9,14 @@ import { LANG_SWITCH_MS, useLang, type Lang } from './lib/i18n';
 import { useSettings } from './lib/settings';
 import { img, userAvatar } from './lib/images';
 import { useActiveAppointmentCount, useBookingNotifications } from './lib/notifications';
+import { usePageTracking } from './lib/analytics';
 import Pic from './components/Pic';
 import Switch from './components/Switch';
 import Splash from './components/Splash';
 import Notifications from './components/Notifications';
 import Drawer from './components/Drawer';
 import WakeBanner from './components/WakeBanner';
+import HomePage from './pages/HomePage';
 import BookingPage from './pages/BookingPage';
 import DoctorSchedulePage from './pages/DoctorSchedulePage';
 import DoctorsPage from './pages/DoctorsPage';
@@ -294,6 +296,7 @@ export default function App() {
   const queryClient = useQueryClient();
   const notif = useBookingNotifications();
   const activeCount = useActiveAppointmentCount();
+  usePageTracking();
 
   const requestLangChange = (next: Lang) => {
     if (next === lang || switchingLang) return;
@@ -396,14 +399,18 @@ export default function App() {
 
   const navLinks = (
     <>
+      <NavLink to="/" className={navLink} end onClick={closeMenu}>
+        <Pic src={img.home} className="h-6 w-6" />
+        {t('nav.home')}
+      </NavLink>
       {user?.role !== 'DOCTOR' && (
-        <NavLink to="/" className={navLink} end onClick={closeMenu}>
+        <NavLink to="/book" className={navLink} onClick={closeMenu}>
           <Pic src={img.addCalendar} className="h-6 w-6" />
           {t('nav.book')}
         </NavLink>
       )}
       {user?.role === 'DOCTOR' && (
-        <NavLink to="/" className={navLink} end onClick={closeMenu}>
+        <NavLink to="/schedule" className={navLink} onClick={closeMenu}>
           <Pic src={img.checkUp} className="h-6 w-6" />
           {t('nav.mySchedule')}
           {navBadge}
@@ -512,10 +519,8 @@ export default function App() {
 
       <main className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
         <Routes>
-          <Route
-            path="/"
-            element={user?.role === 'DOCTOR' ? <DoctorSchedulePage /> : <BookingPage />}
-          />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/book" element={<BookingPage />} />
           <Route path="/schedule" element={<DoctorSchedulePage />} />
           <Route path="/doctors" element={<DoctorsPage />} />
           <Route path="/doctors/:id/book" element={<BookDoctorPage />} />

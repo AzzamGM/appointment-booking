@@ -159,7 +159,7 @@ export default function StaffPage() {
           {t('staff.title')}
         </h1>
         <div className="flex flex-wrap gap-2">
-          <Link to="/" className={`flex items-center gap-1.5 ${btnGhost}`}>
+          <Link to="/book" className={`flex items-center gap-1.5 ${btnGhost}`}>
             <Pic src={img.new} className="h-5 w-5" />
             {t('staff.newBooking')}
           </Link>
@@ -203,7 +203,7 @@ export default function StaffPage() {
                   <span className="font-medium">{e.user?.fullName ?? 'System'}</span>{' '}
                   <span className="text-stone-500 dark:text-stone-400">{e.action}</span>
                   {e.detail && (
-                    <span className="text-stone-500 dark:text-stone-400"> — {e.detail}</span>
+                    <span className="text-stone-500 dark:text-stone-400"> · {e.detail}</span>
                   )}
                   <span className="ml-2 text-xs text-stone-400 dark:text-stone-500">
                     {formatDate(e.createdAt)} {formatTime(e.createdAt)}

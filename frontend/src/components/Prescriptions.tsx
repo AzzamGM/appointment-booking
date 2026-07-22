@@ -221,7 +221,7 @@ export default function Prescriptions({ appointment: a }: { appointment: Appoint
           <div key={p.id} className="rise flex items-start gap-2 text-sm">
             <Pic src={img.medicine} className="mt-0.5 h-5 w-5 shrink-0" />
             <span className="min-w-0 flex-1">
-              <span className="font-medium">{p.medication}</span> — {p.dosage}, {p.frequency}
+              <span className="font-medium">{p.medication}</span> · {p.dosage}, {p.frequency}
               {p.instructions ? `. ${p.instructions}` : ''}
               <span className="ms-1 text-xs text-stone-400 dark:text-stone-500">
                 ({p.prescribedBy})

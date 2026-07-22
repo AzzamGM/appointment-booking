@@ -58,7 +58,7 @@ export function useActiveAppointmentCount(): number {
 
 const SOURCES = {
   STAFF: { key: 'staff-appointments', path: '/appointments', destination: '/staff' },
-  DOCTOR: { key: 'doctor-schedule', path: '/doctors/me/appointments', destination: '/' },
+  DOCTOR: { key: 'doctor-schedule', path: '/doctors/me/appointments', destination: '/schedule' },
   PATIENT: { key: 'my-appointments', path: '/patients/me/appointments', destination: '/appointments' },
 } as const;
 
