@@ -5,7 +5,7 @@ import { signToken } from '../middleware/auth';
 import { ConflictError, UnauthorizedError } from '../middleware/errors';
 import { recordAudit } from './audit.service';
 
-const BCRYPT_ROUNDS = 10;
+export const BCRYPT_ROUNDS = 12;
 
 export function toPublicUser(user: User) {
   return {
@@ -49,17 +49,37 @@ export async function signup(input: {
 
   void recordAudit(user.id, 'auth.signup', user.email);
 
-  return { token: signToken({ sub: user.id, role: user.role }), user: toPublicUser(user) };
+  return {
+    token: signToken({ sub: user.id, role: user.role, ver: user.tokenVersion }),
+    user: toPublicUser(user),
+  };
+}
+
+// Comparing against a throwaway hash when the email is unknown keeps the
+// response time the same as a wrong password, so timing can't reveal which
+// emails are registered. Built on first use to keep startup fast.
+let decoyHash: string | null = null;
+async function getDecoyHash(): Promise<string> {
+  if (!decoyHash) decoyHash = await bcrypt.hash('no-such-account', BCRYPT_ROUNDS);
+  return decoyHash;
 }
 
 export async function login(input: { email: string; password: string }) {
   const user = await prisma.user.findUnique({ where: { email: input.email.toLowerCase().trim() } });
 
-  if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) {
+  const passwordMatches = await bcrypt.compare(
+    input.password,
+    user?.passwordHash ?? (await getDecoyHash()),
+  );
+
+  if (!user || !passwordMatches) {
     throw new UnauthorizedError('Invalid email or password');
   }
 
   void recordAudit(user.id, 'auth.login', user.email);
 
-  return { token: signToken({ sub: user.id, role: user.role }), user: toPublicUser(user) };
+  return {
+    token: signToken({ sub: user.id, role: user.role, ver: user.tokenVersion }),
+    user: toPublicUser(user),
+  };
 }

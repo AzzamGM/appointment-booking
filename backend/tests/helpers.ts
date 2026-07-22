@@ -11,7 +11,10 @@ export async function createUserWithToken(role: Role = 'PATIENT') {
       role,
     },
   });
-  return { user, token: signToken({ sub: user.id, role: user.role }) };
+  return {
+    user,
+    token: signToken({ sub: user.id, role: user.role, ver: user.tokenVersion }),
+  };
 }
 
 export interface ScenarioOptions {

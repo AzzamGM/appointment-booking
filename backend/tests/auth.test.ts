@@ -93,6 +93,46 @@ describe('POST /api/auth/login', () => {
     }
   });
 
+  it('rejects a token issued before a password change', async () => {
+    const signupRes = await request(app).post('/api/auth/signup').send({
+      email: 'rotate@test.local',
+      password: 'password123',
+      fullName: 'Rotating User',
+    });
+    const oldToken = signupRes.body.token as string;
+
+    const stillValid = await request(app)
+      .get('/api/users/me')
+      .set('Authorization', `Bearer ${oldToken}`);
+    expect(stillValid.status).toBe(200);
+
+    const changed = await request(app)
+      .patch('/api/users/me')
+      .set('Authorization', `Bearer ${oldToken}`)
+      .send({ currentPassword: 'password123', newPassword: 'brand-new-password' });
+    expect(changed.status).toBe(200);
+
+    const afterChange = await request(app)
+      .get('/api/users/me')
+      .set('Authorization', `Bearer ${oldToken}`);
+    expect(afterChange.status).toBe(401);
+
+    const relogin = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'rotate@test.local', password: 'brand-new-password' });
+    expect(relogin.status).toBe(200);
+  });
+
+  it('rejects a password longer than bcrypt reads (72 bytes) instead of truncating', async () => {
+    const res = await request(app)
+      .post('/api/auth/signup')
+      .send({ email: 'long@test.local', password: 'a'.repeat(73), fullName: 'Long Password' });
+
+    expect(res.status).toBe(400);
+    const paths = res.body.error.details.map((d: { path: string }) => d.path);
+    expect(paths).toContain('password');
+  });
+
   it('returns 401 for a wrong password, with the SAME message as an unknown email', async () => {
     await createLoginUser('PATIENT', 'known@test.local');
 

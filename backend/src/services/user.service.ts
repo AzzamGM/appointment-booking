@@ -2,10 +2,8 @@ import bcrypt from 'bcryptjs';
 import { AppointmentStatus, SlotStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { BadRequestError, NotFoundError, UnauthorizedError } from '../middleware/errors';
-import { toPublicUser } from './auth.service';
+import { BCRYPT_ROUNDS, toPublicUser } from './auth.service';
 import { recordAudit } from './audit.service';
-
-const BCRYPT_ROUNDS = 10;
 
 const ACTIVE_STATUSES = [
   AppointmentStatus.REQUESTED,
@@ -32,6 +30,7 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
     fullNameAr?: string | null;
     phone?: string | null;
     passwordHash?: string;
+    tokenVersion?: number;
   } = {};
 
   if (input.fullName !== undefined) data.fullName = input.fullName.trim();
@@ -47,6 +46,9 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
       throw new BadRequestError('Your current password is incorrect');
     }
     data.passwordHash = await bcrypt.hash(input.newPassword, BCRYPT_ROUNDS);
+    // Invalidates every token issued before this change, so a session opened
+    // with the old password (or a stolen token) stops working immediately.
+    data.tokenVersion = user.tokenVersion + 1;
   }
 
   const updated = await prisma.user.update({ where: { id: userId }, data });

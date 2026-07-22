@@ -51,6 +51,7 @@ model User {
   role         Role     @default(PATIENT)
   phone        String?
   gender       Gender?
+  tokenVersion Int      @default(0)
   createdAt    DateTime @default(now())
 
   doctorProfile Doctor?

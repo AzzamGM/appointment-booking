@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { authenticate, requireRole } from '../middleware/auth';
 import { asyncHandler } from '../middleware/errors';
+import { sensitiveLimiter } from '../middleware/rateLimit';
+import { password } from '../lib/password';
 import * as userService from '../services/user.service';
 
 const updateProfileSchema = z
@@ -14,8 +16,8 @@ const updateProfileSchema = z
       .regex(/^\+?[\d\s-]{9,20}$/, 'Enter a valid phone number')
       .optional()
       .or(z.literal('')),
-    currentPassword: z.string().optional(),
-    newPassword: z.string().min(8, 'Password must be at least 8 characters').optional(),
+    currentPassword: z.string().min(1).max(200).optional(),
+    newPassword: password.optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'No changes provided' });
 
@@ -31,6 +33,7 @@ usersRouter.get(
 
 usersRouter.patch(
   '/me',
+  sensitiveLimiter,
   asyncHandler(async (req, res) => {
     const input = updateProfileSchema.parse(req.body);
     res.json(await userService.updateProfile(req.user!.sub, input));
