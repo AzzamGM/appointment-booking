@@ -55,9 +55,6 @@ export async function signup(input: {
   };
 }
 
-// Comparing against a throwaway hash when the email is unknown keeps the
-// response time the same as a wrong password, so timing can't reveal which
-// emails are registered. Built on first use to keep startup fast.
 let decoyHash: string | null = null;
 async function getDecoyHash(): Promise<string> {
   if (!decoyHash) decoyHash = await bcrypt.hash('no-such-account', BCRYPT_ROUNDS);

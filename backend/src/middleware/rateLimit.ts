@@ -6,7 +6,6 @@ function limiter(options: Partial<Options>) {
   return rateLimit({
     standardHeaders: 'draft-7',
     legacyHeaders: false,
-    // Integration tests fire many requests at these routes in quick succession.
     skip: () => env.IS_TEST,
     handler: (_req: Request, res: Response) => {
       res.status(429).json({
@@ -17,8 +16,6 @@ function limiter(options: Partial<Options>) {
   });
 }
 
-// Brute-force / credential-stuffing protection. Only failed attempts count, so a
-// user with the right password is never locked out by someone else guessing.
 export const loginLimiter = limiter({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -30,7 +27,6 @@ export const signupLimiter = limiter({
   limit: 10,
 });
 
-// Password changes sit behind a valid session but still verify a secret.
 export const sensitiveLimiter = limiter({
   windowMs: 15 * 60 * 1000,
   limit: 20,

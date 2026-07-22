@@ -13,9 +13,6 @@ function required(name: string): string {
 
 const NODE_ENV = process.env.NODE_ENV ?? 'development';
 
-// Where the built frontend is served from. Used only when CORS_ORIGINS is not
-// set, so production stays locked down without depending on a host env var
-// being present — set CORS_ORIGINS to override (custom domain, preview URL...).
 const DEFAULT_PROD_ORIGINS = ['https://azzamgm.github.io'];
 
 function originList(): string[] {

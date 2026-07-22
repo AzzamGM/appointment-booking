@@ -38,8 +38,6 @@ async function verify(req: Request) {
     throw new UnauthorizedError('Invalid or expired token');
   }
 
-  // JWTs are stateless, so a password change (or a deleted account) can only be
-  // enforced by checking the token against the account it claims to represent.
   const user = await prisma.user.findUnique({
     where: { id: String(decoded.sub) },
     select: { id: true, role: true, tokenVersion: true },
@@ -49,8 +47,6 @@ async function verify(req: Request) {
     throw new UnauthorizedError('Invalid or expired token');
   }
 
-  // Role comes from the database, not the token, so a role change takes effect
-  // immediately instead of lingering until the token expires.
   req.user = { sub: user.id, role: user.role, ver: user.tokenVersion };
 }
 

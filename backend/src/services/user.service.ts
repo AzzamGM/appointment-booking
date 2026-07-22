@@ -46,8 +46,6 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
       throw new BadRequestError('Your current password is incorrect');
     }
     data.passwordHash = await bcrypt.hash(input.newPassword, BCRYPT_ROUNDS);
-    // Invalidates every token issued before this change, so a session opened
-    // with the old password (or a stolen token) stops working immediately.
     data.tokenVersion = user.tokenVersion + 1;
   }
 

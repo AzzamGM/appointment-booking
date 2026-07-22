@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-// bcrypt only reads the first 72 bytes of a password and silently discards the
-// rest, so anything longer is rejected outright rather than quietly truncated.
 export const MAX_PASSWORD_BYTES = 72;
 
 export const password = z
