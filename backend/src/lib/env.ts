@@ -13,9 +13,14 @@ function required(name: string): string {
 
 const NODE_ENV = process.env.NODE_ENV ?? 'development';
 
+// Where the built frontend is served from. Used only when CORS_ORIGINS is not
+// set, so production stays locked down without depending on a host env var
+// being present — set CORS_ORIGINS to override (custom domain, preview URL...).
+const DEFAULT_PROD_ORIGINS = ['https://azzamgm.github.io'];
+
 function originList(): string[] {
   const raw = process.env.CORS_ORIGINS?.trim();
-  if (!raw) return [];
+  if (!raw) return NODE_ENV === 'production' ? DEFAULT_PROD_ORIGINS : [];
   return raw
     .split(',')
     .map((o) => o.trim().replace(/\/$/, ''))
@@ -34,10 +39,10 @@ export const env = {
   TRUST_PROXY_HOPS: Number(process.env.TRUST_PROXY_HOPS ?? 1),
 };
 
-if (env.IS_PROD && env.CORS_ORIGINS.length === 0) {
-  throw new Error(
-    'Missing CORS_ORIGINS in production. Set it to a comma-separated list of allowed ' +
-      'frontend origins, e.g. CORS_ORIGINS="https://azzamgm.github.io".',
+if (env.IS_PROD && !process.env.CORS_ORIGINS?.trim()) {
+  console.warn(
+    `[cors] CORS_ORIGINS is not set — falling back to ${DEFAULT_PROD_ORIGINS.join(', ')}. ` +
+      'Set CORS_ORIGINS if the frontend is served from anywhere else.',
   );
 }
 
